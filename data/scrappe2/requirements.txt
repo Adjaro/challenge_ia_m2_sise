@@ -1,0 +1,5 @@
+bs4
+requests
+pypdf2
+litellm
+dotenv
