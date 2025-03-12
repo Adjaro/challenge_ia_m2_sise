@@ -119,6 +119,26 @@ def analyze_cv(
 # print(analyze_cv(text_brut))
 
 
+def calculate_similarity(text1: str, text2: str) -> float:
+    """
+    Calcule la similarité cosinus entre deux textes en utilisant Sentence-BERT.
+
+    Args:
+        text1 (str): Premier texte.
+        text2 (str): Deuxième texte.
+
+    Returns:
+        float: Score de similarité cosinus entre les deux textes.
+    """
+    # Encoder les textes en embeddings
+    embedding1 = model.encode(text1, convert_to_tensor=True)
+    embedding2 = model.encode(text2, convert_to_tensor=True)
+
+    # Calculer la similarité cosinus
+    similarity = util.cos_sim(embedding1, embedding2)
+    return similarity.item()
+
+
 #### Transformation de l'offre d'emploi au même format que le CV
 def analyze_cv_offre_emploi(
     offre: str, temperature: float = 0.01, max_tokens: int = 1500
