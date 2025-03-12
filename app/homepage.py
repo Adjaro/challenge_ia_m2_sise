@@ -12,10 +12,11 @@ def homepage():
 
     with col1:
         st.subheader("CV")
-        st.write("Ajouter ici votre CV")
-        uploaded_file = st.file_uploader("Choisir un fichier", type=['pdf'], accept_multiple_files=False)
-        if uploaded_file is not None:
-            cv_filename = uploaded_file.name
+        uploaded_cv = st.file_uploader(label="Choisir un fichier", type=['pdf'], accept_multiple_files=False,label_visibility="visible")
+        if uploaded_cv is not None:
+            st.session_state['uploaded_cv'] = uploaded_cv
+            cv_filename = uploaded_cv.name
+            st.session_state['cv_filename'] = cv_filename
             st.success(f"'{cv_filename}' chargé avec succès")
     
     with col2:
