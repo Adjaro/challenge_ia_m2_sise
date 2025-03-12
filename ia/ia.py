@@ -119,6 +119,77 @@ def analyze_cv(
 # print(analyze_cv(text_brut))
 
 
+#### Transformation de l'offre d'emploi au même format que le CV
+def analyze_cv_offre_emploi(
+    offre: str, temperature: float = 0.01, max_tokens: int = 1500
+) -> str:
+    """
+    Analyse une offre d'emploi en format texte et retourne les informations structurées en JSON.
+
+    Args:
+        text_brut (str): Texte brut del'offre à analyser
+        temperature (float, optional): Paramètre de créativité du modèle. Defaults to 0.2.
+        max_tokens (int, optional): Nombre maximum de tokens pour la réponse. Defaults to 1500.
+
+    Returns:
+        str: Informations en string(réponse du LLM) structurées du CV au format JSON
+
+    Raises:
+        Exception: En cas d'erreur d'API ou de parsing JSON
+    """
+    try:
+        reformulation_prompt = f"""
+        À partir de cette offre d'emploi, extrais les informations suivantes au format JSON. 
+        Si une information n'est pas explicitement mentionnée dans le texte, retourne `null` ou une liste vide.
+        Ne devine pas les informations manquantes et ne retourne que ce qui est clairement présent dans le texte.
+
+        Format JSON attendu :
+        {{
+            "Formation": [
+                {{
+                    "niveau_etudes": "str",  // Ex: "Licence", "Master", "Doctorat"
+                    "domaine_etudes": ["str"]  // Ex: ["Informatique", "Mathématiques"]
+                }}
+            ],
+            "Competences": ["str"],  // Ex: ["Python", "Gestion de projet"]
+            "Experiences": [
+                {{
+                    "domaine_activite": ["str"],  // Ex: ["Tech", "Finance"]
+                    "poste_occupe": "str",  // Ex: "Développeur Python"
+                    "duree": "str"  // Ex: "2 ans"
+                }}
+            ],
+            "Profil": {{
+                "titre": "str",  // Ex: "Développeur Full-Stack"
+                "disponibilite": "str"  // Ex: "Immédiate"
+            }}
+        }}
+
+        Texte de l'offre d'emploi :
+        "{offre}"
+
+        Ne retourne que le JSON, sans commentaires supplémentaires.
+        """
+
+        offre_reformuler = litellm.completion(
+            model="mistral/mistral-medium",
+            messages=[{"role": "user", "content": reformulation_prompt}],
+            max_tokens=max_tokens,
+            temperature=temperature,
+            api_key=os.getenv("MISTRAL_API_KEY"),
+        )
+
+        # Extraire et parser le JSON de la réponse
+        resultat = offre_reformuler["choices"][0]["message"]["content"].strip()
+        return resultat
+
+    except Exception as e:
+        raise Exception(f"Erreur lors de l'analyse du CV: {str(e)}")
+
+
+# print(offre_emploi_to_json(offre))
+
+
 # Example usage
 if __name__ == "__main__":
     file_path = "CV_V4_EN.pdf"
