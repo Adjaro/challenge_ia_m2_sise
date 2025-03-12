@@ -144,7 +144,7 @@ def calculate_similarity(text1: str, text2: str) -> float:
 
 
 #### Transformation de l'offre d'emploi au même format que le CV
-def analyze_cv_offre_emploi(
+def analyze_offre_emploi(
     offre: str, temperature: float = 0.01, max_tokens: int = 1500
 ) -> str:
     """
