@@ -3,10 +3,23 @@ import sys
 import pandas as pd
 import streamlit as st
 from streamlit_option_menu import option_menu
+from dotenv import find_dotenv, load_dotenv
 
 # Importation des pages de l'application
 from homepage import homepage
 
+# Charger les variables d'environnement
+load_dotenv(find_dotenv())
+API_KEY = os.getenv("MISTRAL_API_KEY")
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+if not API_KEY:
+    st.warning("Veuillez ajouter votre clé API Mistral dans le fichier `.env`. Redémarrez l'application après avoir ajouté la clé.")
+    return
+
+if not HF_TOKEN:
+    st.warning("Veuillez ajouter votre token Hugging Face dans le fichier `.env`. Redémarrez l'application après avoir ajouté le token.")
+    return
 
 
 # Menu de navigation
@@ -19,14 +32,6 @@ with st.sidebar:
         default_index=0,
     )
 
-    mistral_api_key = st.text_input("Entrez votre clef Mistral", type="password")
-    hf_token = st.text_input("Entrez votre token Hugging Face", type="password")
-
-    if mistral_api_key and hf_token:
-        st.session_state['mistral_api_key'] = mistral_api_key
-        st.session_state['hf_token'] = hf_token
-        st.success("API key et token enregistrés")
-    
     if "cv_filename" in st.session_state:
         cv_filename = st.session_state['cv_filename']
         st.sidebar.markdown(
@@ -37,7 +42,6 @@ with st.sidebar:
             """,
             unsafe_allow_html=True
         )
-
 # Chargement des pages
 if page == "Accueil":
     homepage()
