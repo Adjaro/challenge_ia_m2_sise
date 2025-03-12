@@ -2,6 +2,7 @@ import os
 import sys
 import pandas as pd
 import streamlit as st
+import requests
 
 def homepage():
     st.title("Bienvenue sur JobMatch")
@@ -19,8 +20,13 @@ def homepage():
     
     with col2:
         st.subheader("Offre d'emploi")
-        st.write("Insérer ici le lien de l'offre d'emploi")
-        url_offre = st.text_input("Lien de l'offre d'emploi")
+        url_offre = st.text_input("Insérer ici le lien de l'offre d'emploi")
         if url_offre:
-            st.success("Offre d'emploi chargée avec succès")
+            try:
+                response = requests.get(url_offre)
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                st.error(f"Erreur lors du chargement de l'offre d'emploi: {e}")
+            else:
+                st.success("L'URL de l'offre d'emploi est valide")
     
