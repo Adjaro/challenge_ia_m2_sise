@@ -26,6 +26,17 @@ with st.sidebar:
         st.session_state['mistral_api_key'] = mistral_api_key
         st.session_state['hf_token'] = hf_token
         st.success("API key et token enregistrés")
+    
+    if "cv_filename" in st.session_state:
+        cv_filename = st.session_state['cv_filename']
+        st.sidebar.markdown(
+            f"""
+            <div style="background-color: lightgreen; padding: 10px;">
+            CV uploadé : {cv_filename}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 # Chargement des pages
 if page == "Accueil":
