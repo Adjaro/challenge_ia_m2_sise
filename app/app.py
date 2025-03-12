@@ -15,20 +15,19 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 
 if not API_KEY:
     st.warning("Veuillez ajouter votre clé API Mistral dans le fichier `.env`. Redémarrez l'application après avoir ajouté la clé.")
-    return
+    st.stop()
 
 if not HF_TOKEN:
     st.warning("Veuillez ajouter votre token Hugging Face dans le fichier `.env`. Redémarrez l'application après avoir ajouté le token.")
-    return
+    st.stop()
 
 
 # Menu de navigation
 with st.sidebar:
     page = option_menu(
         menu_title="Navigation",
-        options=["Accueil", "CV", "Offre", "Matching"],
-        icons=["house", "plus-circle", "search", "arrow-left-right", "robot", "graph-up"],
-        menu_icon="list",
+        options=["Accueil", "Synthèse du CV", "Offre d'emploi", "Matching"],
+        icons=["house", "file-earmark-text", "briefcase", "arrows"],
         default_index=0,
     )
 
@@ -36,18 +35,21 @@ with st.sidebar:
         cv_filename = st.session_state['cv_filename']
         st.sidebar.markdown(
             f"""
-            <div style="background-color: lightgreen; padding: 10px;">
+            <div style="background-color: lightblue; padding: 10px;">
             CV uploadé : {cv_filename}
             </div>
             """,
             unsafe_allow_html=True
         )
+    
+
+
 # Chargement des pages
 if page == "Accueil":
     homepage()
-elif page == "CV":
+elif page == "Synthèse du CV":
     st.title("Page CV")
-elif page == "Offre":
+elif page == "Offre d'emploi":
     st.title("Page Offre")
 elif page == "Matching":
     st.title("Page Matching")
