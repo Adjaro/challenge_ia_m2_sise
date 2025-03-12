@@ -1,0 +1,119 @@
+from PyPDF2 import PdfReader
+import os
+import litellm
+from dotenv import load_dotenv, find_dotenv
+
+
+load_dotenv()
+
+
+def read_pdf(file_path: str) -> str:
+    """Lit et extrait le texte d'un CV au format PDF d'une seule page.
+
+    Args:
+        file_path (str): Chemin d'accès vers le fichier PDF à lire
+
+    Returns:
+        str: Texte brut extrait du PDF
+
+    Raises:
+        FileNotFoundError: Si le fichier PDF n'existe pas
+        IndexError: Si le PDF est vide
+        Exception: Pour toute autre erreur lors de la lecture du PDF
+    """
+    try:
+        reader = PdfReader(file_path)
+        if len(reader.pages) == 0:
+            raise IndexError("Le PDF est vide")
+
+        page = reader.pages[0]  # Lecture de la première page uniquement
+        text_brut = page.extract_text()
+
+        if not text_brut:
+            raise Exception("Aucun texte n'a pu être extrait du PDF")
+
+        return text_brut
+
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Le fichier {file_path} n'existe pas")
+    except IndexError as e:
+        raise IndexError(str(e))
+    except Exception as e:
+        raise Exception(f"Erreur lors de la lecture du PDF: {str(e)}")
+
+
+# print(read_pdf("CV_V4_EN.pdf"))
+
+
+def analyze_cv(
+    text_brut: str, temperature: float = 0.01, max_tokens: int = 1500
+) -> dict:
+    """
+    Analyse un CV en format texte et retourne les informations structurées en JSON.
+
+    Args:
+        text_brut (str): Texte brut du CV à analyser
+        temperature (float, optional): Paramètre de créativité du modèle. Defaults to 0.2.
+        max_tokens (int, optional): Nombre maximum de tokens pour la réponse. Defaults to 1500.
+
+    Returns:
+        dict: Dictionnaire contenant les informations structurées du CV avec les clés suivantes:
+            - Diplome: Liste des diplômes avec niveau et domaine d'études
+            - Competences: Liste des compétences
+            - Experiences: Liste des expériences professionnelles
+            - Profil: Informations sur le profil et la disponibilité
+
+    Raises:
+        Exception: En cas d'erreur d'API ou de parsing JSON
+    """
+    try:
+        reformulation_prompt = f"""
+        À partir du texte brut d'un CV, extrais les informations suivantes au format JSON. 
+        Si une information n'est pas explicitement mentionnée dans le texte, retourne `null` ou une liste vide.
+        Ne devine pas les informations manquantes et ne retourne que ce qui est clairement présent dans le texte.
+
+        Format JSON attendu :
+        {{
+            "Diplome": [
+                {{
+                    "niveau_etudes": "str",  // Ex: "Licence", "Master", "Doctorat"
+                    "domaine_etudes": ["str"]  // Ex: ["Informatique", "Mathématiques"]
+                }}
+            ],
+            "Competences": ["str"],  // Ex: ["Python", "Gestion de projet"]
+            "Experiences": [
+                {{
+                    "domaine_activite": ["str"],  // Ex: ["Tech", "Finance"]
+                    "poste_occupe": "str",  // Ex: "Développeur Python"
+                    "duree": "str"  // Ex: "2 ans"
+                }}
+            ],
+            "Profil": {{
+                "titre": "str",  // Ex: "Développeur Full-Stack"
+                "disponibilite": "str"  // Ex: "Immédiate"
+            }}
+        }}
+
+        Texte du CV :
+        "{text_brut}"
+
+        Ne retourne que le JSON, sans commentaires supplémentaires.
+        """
+
+        CV_reformuler = litellm.completion(
+            model="mistral/mistral-medium",
+            messages=[{"role": "user", "content": reformulation_prompt}],
+            max_tokens=max_tokens,
+            temperature=temperature,
+            api_key=os.getenv("MISTRAL_API_KEY"),
+        )
+
+        # Extraire et parser le JSON de la réponse
+        resultat = CV_reformuler["choices"][0]["message"]["content"].strip()
+        return resultat
+
+    except Exception as e:
+        raise Exception(f"Erreur lors de l'analyse du CV: {str(e)}")
+
+
+# print(analyze_cv(text_brut))
