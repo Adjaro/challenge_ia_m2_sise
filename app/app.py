@@ -7,6 +7,8 @@ from dotenv import find_dotenv, load_dotenv
 
 # Importation des pages de l'application
 from homepage import homepage
+from synthese_cv_llm import synthese_cv_llm
+
 
 # Charger les variables d'environnement
 load_dotenv(find_dotenv())
@@ -48,8 +50,9 @@ with st.sidebar:
 if page == "Accueil":
     homepage()
 elif page == "Synthèse du CV":
-    st.title("Page CV")
+    synthese_cv_llm()
 elif page == "Offre d'emploi":
     st.title("Page Offre")
 elif page == "Matching":
     st.title("Page Matching")
+
