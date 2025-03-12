@@ -2,6 +2,8 @@ from PyPDF2 import PdfReader
 import os
 import litellm
 from dotenv import load_dotenv, find_dotenv
+from sentence_transformers import SentenceTransformer, util
+import numpy as np
 
 
 load_dotenv()
@@ -131,6 +133,8 @@ def calculate_similarity(text1: str, text2: str) -> float:
         float: Score de similarité cosinus entre les deux textes.
     """
     # Encoder les textes en embeddings
+    model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+
     embedding1 = model.encode(text1, convert_to_tensor=True)
     embedding2 = model.encode(text2, convert_to_tensor=True)
 
