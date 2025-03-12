@@ -19,6 +19,14 @@ with st.sidebar:
         default_index=0,
     )
 
+    mistral_api_key = st.text_input("Entrez votre clef Mistral", type="password")
+    hf_token = st.text_input("Entrez votre token Hugging Face", type="password")
+
+    if mistral_api_key and hf_token:
+        st.session_state['mistral_api_key'] = mistral_api_key
+        st.session_state['hf_token'] = hf_token
+        st.success("API key et token enregistrés")
+
 # Chargement des pages
 if page == "Accueil":
     homepage()
