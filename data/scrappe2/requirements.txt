@@ -3,3 +3,6 @@ requests
 pypdf2
 litellm
 dotenv
+pandas
+streamlit
+streamlit_option_menu
