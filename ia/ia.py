@@ -2,9 +2,10 @@ from PyPDF2 import PdfReader
 import os
 import litellm
 from dotenv import load_dotenv, find_dotenv
-from sentence_transformers import SentenceTransformer, util
 import numpy as np
-
+import requests
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 
 load_dotenv()
 
@@ -120,10 +121,30 @@ def analyze_cv(
 
 # print(analyze_cv(text_brut))
 
+def get_embedding(text: str) -> np.ndarray:
+    """
+    Envoie une requête à l'API Hugging Face pour obtenir l'embedding d'un texte.
+
+    Args:
+        text (str): Texte à encoder.
+
+    Returns:
+        np.ndarray: Embedding du texte.
+    """
+    headers = {"Authorization": f"Bearer {os.getenv("HF_TOKEN")}"}
+    response = requests.post(
+        "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        headers=headers,
+        json={"inputs": text, "options": {"wait_for_model": True}},
+    )
+    if response.status_code != 200:
+        raise Exception(f"Erreur API : {response.status_code}, {response.text}")
+    return np.array(response.json())
+
 
 def calculate_similarity(text1: str, text2: str) -> float:
     """
-    Calcule la similarité cosinus entre deux textes en utilisant Sentence-BERT.
+    Calcule la similarité cosinus entre deux textes en utilisant l'API Hugging Face.
 
     Args:
         text1 (str): Premier texte.
@@ -132,15 +153,18 @@ def calculate_similarity(text1: str, text2: str) -> float:
     Returns:
         float: Score de similarité cosinus entre les deux textes.
     """
-    # Encoder les textes en embeddings
-    model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-
-    embedding1 = model.encode(text1, convert_to_tensor=True)
-    embedding2 = model.encode(text2, convert_to_tensor=True)
+    # Obtenir les embeddings des textes
+    embedding1 = get_embedding(text1)
+    embedding2 = get_embedding(text2)
 
     # Calculer la similarité cosinus
-    similarity = util.cos_sim(embedding1, embedding2)
-    return similarity.item()
+    similarity = cosine_similarity([embedding1], [embedding2])[0][0]
+    return similarity
+
+
+# # Calculer la similarité entre le CV et l'offre d'emploi
+# similarity_score = calculate_similarity(CV_reformuler, job_offer_reforumer)
+# print(f"Similarité globale entre le CV et l'offre d'emploi: {similarity_score:.4f}")
 
 
 #### Transformation de l'offre d'emploi au même format que le CV
