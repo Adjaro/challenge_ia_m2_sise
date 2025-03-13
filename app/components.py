@@ -138,6 +138,8 @@ def comparer_cv():
                 analyse = json.loads(analyse)
                 st.session_state["offre_json"] = analyse
 
+                # st.write(analyse)
+
                 progress_bar.progress(60)
                 comparaison = comparer_cv_offre()
 
@@ -252,12 +254,19 @@ def show_comparaison_cv():
                 with col2:
                     st.markdown("##### 💼 Offre d'emploi")
                     st.markdown('<div class="section-content">', unsafe_allow_html=True)
-                    if key.lower() in offre_data:
-                        if isinstance(offre_data[key.lower()], list):
-                            st.write("• " + "\n• ".join(offre_data[key.lower()]))
-                        else:
-                            st.write(offre_data[key.lower()])
+                    if key.lower() == "competences":
+                        st.write("• " + "\n• ".join(offre_data.get("Competences", [])))
+                    elif key.lower() == "formation":
+                        for formation in cv_data.get("Formation", []):
+                            st.write(f"• {offre_data.get('niveau_etudes')} - {', '.join(offre_data.get('domaine_etudes', []))}")
+                    elif key.lower() == "experiences":
+                        for exp in offre_data.get("Experiences", []):
+                            st.write(f"• {exp.get('poste_occupe')} ({exp.get('duree')})")
+                    elif key.lower() == "profil":
+                        st.write(f"• Titre: {offre_data.get('Profil', {}).get('titre')}")
+                        st.write(f"• Disponibilité: {offre_data.get('Profil', {}).get('disponibilite')}")
                     st.markdown('</div>', unsafe_allow_html=True)
+
 
     # Overall recommendation
     total_score = sum(comparaison.values()) / len(comparaison)
@@ -266,6 +275,7 @@ def show_comparaison_cv():
         st.success(f"✨ Votre profil correspond bien à cette offre avec une compatibilité globale de {total_score*100:.1f}%")
     else:
         st.warning(f"⚠️ Votre profil présente quelques écarts avec cette offre (compatibilité: {total_score*100:.1f}%)")
+
 
 
 @st.dialog("Modification du CV", width="large")
@@ -347,37 +357,3 @@ def show_modifier_cv():
             st.session_state["modifications"] = True
             # st.session_state["suivant"] = True
             st.rerun()  # Recharger la page pour appliquer les modifications
-    # with col2:
-    #     if st.button("Annuler", type="secondary"):
-    #         st.session_state["modifications"] = False
-    #         # st.session_state["suivant"] = False
-    #         st.rerun()  # Recharger la page sans enregistrer les modifications
-
-# # Exemple de données CV
-# cv_info = {
-#     "Profil": {
-#         "titre": "Data Scientist",
-#         "disponibilite": "Disponible immédiatement"
-#     },
-#     "Formation": [
-#         {
-#             "niveau_etudes": "Master",
-#             "domaine_etudes": ["Informatique", "Mathématiques appliquées"]
-#         }
-#     ],
-#     "Competences": [
-#         "Python", "SQL", "Terraform", "Bitbucket", "Jenkins", "Airflow", "Docker", 
-#         "Kubernetes", "GCP (BigQuery, Spark DataProc)", "Développement logiciel agile", 
-#         "Algorithmes d'apprentissage statistique"
-#     ],
-#     "Experiences": [
-#         {
-#             "domaine_activite": ["Data Science"],
-#             "poste_occupe": "Data Scientist",
-#             "duree": "5 ans"
-#         }
-#     ]
-# }
-
-# # Affichage de la barre latérale
-# show_sidebar(cv_info)
