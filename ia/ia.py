@@ -8,10 +8,13 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime
 import locale
-
+from monitoring_ecologie import EnvironmentMetrics
 import json
 
 load_dotenv()
+
+# Créer une instance unique de monitoring -> A discuter avec Alexis comment implémenter dans son streamlit (cache, session ?)
+monitoring_environnement = EnvironmentMetrics()
 
 
 ##########
@@ -97,12 +100,10 @@ def get_energy_usage(response: litellm.ModelResponse):
 
     return None, None
 
-############################### Monitoring ###############################
+############################### FIN Monitoring ###############################
 
 
-def analyze_cv(
-    text_brut: str, temperature: float = 0.01, max_tokens: int = 1500
-) -> dict:
+def analyze_cv(text_brut: str, temperature: float = 0.01, max_tokens: int = 1500) -> str:
     """
     Analyse un CV en format texte et retourne les informations structurées en JSON.
 
@@ -112,11 +113,7 @@ def analyze_cv(
         max_tokens (int, optional): Nombre maximum de tokens pour la réponse. Defaults to 1500.
 
     Returns:
-        dict: Dictionnaire contenant les informations structurées du CV avec les clés suivantes:
-            - Diplome: Liste des diplômes avec niveau et domaine d'études
-            - Competences: Liste des compétences
-            - Experiences: Liste des expériences professionnelles
-            - Profil: Informations sur le profil et la disponibilité
+        str: Informations en string(réponse du LLM) structurées du CV au format JSON
 
     Raises:
         Exception: En cas d'erreur d'API ou de parsing JSON
@@ -129,7 +126,7 @@ def analyze_cv(
 
         Format JSON attendu :
         {{
-            "Diplome": [
+            "Formation": [
                 {{
                     "niveau_etudes": "str",  // Ex: "Licence", "Master", "Doctorat"
                     "domaine_etudes": ["str"]  // Ex: ["Informatique", "Mathématiques"]
@@ -145,7 +142,7 @@ def analyze_cv(
             ],
             "Profil": {{
                 "titre": "str",  // Ex: "Développeur Full-Stack"
-                "disponibilite": "str"  // Ex: "Immédiate"
+                "disponibilite": "str"  // Ex: "dd-mm-yyyy"
             }}
         }}
 
@@ -155,7 +152,7 @@ def analyze_cv(
         Ne retourne que le JSON, sans commentaires supplémentaires.
         """
 
-        CV_reformuler = litellm.completion(
+        response = litellm.completion(
             model="mistral/mistral-medium",
             messages=[{"role": "user", "content": reformulation_prompt}],
             max_tokens=max_tokens,
@@ -164,9 +161,17 @@ def analyze_cv(
         )
 
         # Extraire et parser le JSON de la réponse
-        resultat = CV_reformuler["choices"][0]["message"]["content"].strip()
-        return resultat
+        resultat = response["choices"][0]["message"]["content"].strip()
 
+        # Impact écologique
+        energy_usage, gwp = get_energy_usage(response=response)
+        
+        monitoring_environnement.update_metrics(new_gwp=gwp, new_energy=energy_usage)
+
+        # Ajout à une variable globale pour utilisation ultérieure ?
+
+        return resultat
+    
     except Exception as e:
         raise Exception(f"Erreur lors de l'analyse du CV: {str(e)}")
 
@@ -280,6 +285,11 @@ def analyze_offre_emploi(offre: str, temperature: float = 0.01, max_tokens: int 
 
         # Extraire et parser le JSON de la réponse
         resultat = offre_reformuler["choices"][0]["message"]["content"].strip()
+
+        # Impact écologique
+        energy_usage, gwp = get_energy_usage(response=offre_reformuler)
+        monitoring_environnement.update_metrics(new_gwp=gwp, new_energy=energy_usage)
+
         return resultat
     
     except Exception as e:
@@ -398,7 +408,13 @@ def extraction_info_perso(text_brut: str) -> str:
                 api_key=os.getenv("MISTRAL_API_KEY"),
             )
     
+    # Impact écologique
+    energy_usage, gwp = get_energy_usage(response=resultat_extraction_info_perso)
+    monitoring_environnement.update_metrics(new_gwp=gwp, new_energy=energy_usage)
+    
     return resultat_extraction_info_perso["choices"][0]["message"]["content"].strip()
+    
+    
     
 # print(extraction_info_perso(text_brut))
 
@@ -491,11 +507,18 @@ def generate_lettre_motivation(text_brut: str, job_offer:str) ->str:
                 api_key=os.getenv("MISTRAL_API_KEY"),
             )
 
+
+    # Impact écologique
+    energy_usage, gwp = get_energy_usage(response=Lettre_motiv_genere)
+    monitoring_environnement.update_metrics(new_gwp=gwp, new_energy=energy_usage)
+
     resultat = Lettre_motiv_genere["choices"][0]["message"][
                 "content"
             ].strip()
     
     return resultat
+
+
 
 # print(generate_lettre_motivation(text_brut, job_offer))
 
