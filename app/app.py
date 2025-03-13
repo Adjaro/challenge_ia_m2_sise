@@ -7,6 +7,10 @@ from dotenv import find_dotenv, load_dotenv
 
 # Importation des pages de l'application
 from homepage import homepage
+from componentsAlexis import offre_emploi_page
+from  components import show_sidebar, comparer_cv
+
+
 
 # Charger les variables d'environnement
 load_dotenv(find_dotenv())
@@ -20,36 +24,64 @@ if not API_KEY:
 if not HF_TOKEN:
     st.warning("Veuillez ajouter votre token Hugging Face dans le fichier `.env`. Redémarrez l'application après avoir ajouté le token.")
     st.stop()
+ 
+
+# CSS personnalisé pour centrer la sidebar, arrondir les bordures, ajouter une couleur de fond et des marges
+st.markdown("""
+    <style>
+        /* Centrer la sidebar */
+        section[data-testid="stSidebar"] {
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            height: 60% !important;
+            border-radius: 20px !important; /* Arrondir les coins de la sidebar */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important; /* Ajouter une ombre */
+            background-color: #f0f2f6 !important; /* Couleur de fond de la sidebar */
+            margin-left: 20px !important; /* Marge à gauche */
+            margin-right: 20px !important; /* Marge à droite */
+            padding: 10px !important; /* Espacement interne */
+        }
+
+        /* Arrondir les bordures des boîtes dans la sidebar */
+        .st-eb, .st-cb, .st-db, .st-fb {
+            border-radius: 10px !important;
+            padding: 10px !important;
+            margin: 5px 0 !important;
+           
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important; /* Ombre légère pour les boîtes */
+        }
+
+        /* Style pour les boutons dans la sidebar */
+        .stButton > button {
+            border-radius: 10px !important;
+            padding: 10px 20px !important;
+            font-size: 16px !important;
+            transition: background-color 0.3s ease !important;
+            background-color: #4CAF50 !important; /* Couleur de fond du bouton */
+           
+            border: none !important; /* Supprimer la bordure */
+        }
+ 
+        .stButton > button:hover {
+            background-color: #615533 !important; /* Couleur de fond au survol */
+        }
+
+        /* Style pour les titres dans la sidebar */
+        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+            color: #615533 !important; /* Couleur du texte des titres */
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 
 
 # Menu de navigation
-with st.sidebar:
-    page = option_menu(
-        menu_title="Navigation",
-        options=["Accueil", "Synthèse du CV", "Offre d'emploi", "Matching"],
-        icons=["house", "file-earmark-text", "briefcase", "arrows"],
-        default_index=0,
-    )
+# init_state()
 
-    if "cv_filename" in st.session_state:
-        cv_filename = st.session_state['cv_filename']
-        st.sidebar.markdown(
-            f"""
-            <div style="background-color: lightblue; padding: 10px;">
-            CV uploadé : {cv_filename}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    
-
-
-# Chargement des pages
-if page == "Accueil":
+if ("uploaded_cv" not in st.session_state):
     homepage()
-elif page == "Synthèse du CV":
-    st.title("Page CV")
-elif page == "Offre d'emploi":
-    st.title("Page Offre")
-elif page == "Matching":
-    st.title("Page Matching")
+elif "uploaded_cv" in st.session_state and "url" not in st.session_state:
+    cv_info = st.session_state["cv_json"]
+    show_sidebar(cv_info)
+    comparer_cv()
+ 
