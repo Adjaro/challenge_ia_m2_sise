@@ -7,7 +7,7 @@ from dotenv import find_dotenv, load_dotenv
 
 # Importation des pages de l'application
 from homepage import homepage
-from synthese_cv_llm import synthese_cv_llm
+from componentsAlexis import offre_emploi_page
 
 
 # Charger les variables d'environnement
@@ -24,35 +24,48 @@ if not HF_TOKEN:
     st.stop()
 
 
-# Menu de navigation
+
+# Sidebar
 with st.sidebar:
-    page = option_menu(
-        menu_title="Navigation",
-        options=["Accueil", "Synthèse du CV", "Offre d'emploi", "Matching"],
-        icons=["house", "file-earmark-text", "briefcase", "arrows"],
-        default_index=0,
-    )
 
     if "cv_filename" in st.session_state:
         cv_filename = st.session_state['cv_filename']
         st.sidebar.markdown(
             f"""
-            <div style="background-color: lightblue; padding: 10px;">
-            CV uploadé : {cv_filename}
+            <div style="background-color: blue; padding: 10px; word-wrap: break-word;">
+            CV uploadé : <span style="font-size: smaller;">{cv_filename}</span>
             </div>
             """,
             unsafe_allow_html=True
         )
     
+    st.sidebar.markdown("<br>", unsafe_allow_html=True)  # Add space between the two markdowns
 
+    if "url_offre" in st.session_state:
+        url_offre = st.session_state['url_offre']
+        st.sidebar.markdown(
+            f"""
+            <div style="background-color: green; padding: 10px; word-wrap: break-word;">
+            URL de l'offre : <span style="font-size: smaller;">{url_offre}</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    
+    st.sidebar.markdown("<br>", unsafe_allow_html=True)  # Add space between the two markdowns
 
-# Chargement des pages
-if page == "Accueil":
+    if "cv_filename" in st.session_state :
+        améliorer_cv = st.button("Améliorer mon CV")
+    
+    if "cv_filename" in st.session_state and "url_offre" in st.session_state:
+        matching_cv_offre = st.button("Matching CV-offre d'emploi")
+        
+    
+
+# Gestion de la navigation séquentielle
+if "uploaded_cv" not in st.session_state :
     homepage()
-elif page == "Synthèse du CV":
-    synthese_cv_llm()
-elif page == "Offre d'emploi":
-    st.title("Page Offre")
-elif page == "Matching":
-    st.title("Page Matching")
+
+elif "uploaded_cv" in st.session_state and "url" not in st.session_state:
+    offre_emploi_page()
 
