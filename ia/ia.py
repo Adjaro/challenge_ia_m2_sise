@@ -345,7 +345,7 @@ def extraction_info_perso(text_brut: str) -> str:
     resultat_extraction_info_perso = litellm.completion(
                 model="mistral/mistral-tiny",  
                 messages=[{"role": "user", "content": prompt_extraction_info_perso}],
-                max_tokens=1500,
+                max_tokens=50,
                 temperature=0.1,
                 api_key=os.getenv("MISTRAL_API_KEY"),
             )
