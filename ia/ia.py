@@ -14,6 +14,18 @@ import json
 load_dotenv()
 
 
+##########
+# Le processus est le suivant :
+# 1. Lire un CV au format PDF
+# 2. Analyser le CV pour extraire les informations structurées
+# 3. Calculer la similarité globale entre le CV et une offre d'emploi
+# 4. Analyser une offre d'emploi pour extraire les informations structurées
+# 5. Calculer les similarités pour chaque section du CV et de l'offre d'emploi
+# 6. Extraires les informations personnelles d'un CV
+# 7. Générer une lettre de motivation personnalisée
+#
+##########
+
 def read_pdf(file_path: str) -> str:
     """Lit et extrait le texte d'un CV au format PDF d'une seule page.
 
@@ -50,6 +62,42 @@ def read_pdf(file_path: str) -> str:
 
 
 # print(read_pdf("CV_V4_EN.pdf"))
+
+
+
+############################### Monitoring ###############################
+
+
+def get_energy_usage(response: litellm.ModelResponse):
+    """
+    Extracts energy usage and global warming potential (GWP) from the response.
+
+    Parameters:
+        response (litellm.ModelResponse): The model response containing impact data.
+
+    Returns:
+        tuple: A tuple (energy_usage, gwp) if impacts are present, otherwise (None, None).
+    """
+    if hasattr(response, "impacts"):
+        try:
+            energy_usage = getattr(
+                response.impacts.energy.value, "min", response.impacts.energy.value
+            )
+        except AttributeError:
+            energy_usage = None
+
+        try:
+            gwp = getattr(
+                response.impacts.gwp.value, "min", response.impacts.gwp.value
+            )
+        except AttributeError:
+            gwp = None
+
+        return energy_usage, gwp
+
+    return None, None
+
+############################### Monitoring ###############################
 
 
 def analyze_cv(
@@ -450,6 +498,7 @@ def generate_lettre_motivation(text_brut: str, job_offer:str) ->str:
     return resultat
 
 # print(generate_lettre_motivation(text_brut, job_offer))
+
 
 
 # Example usage
