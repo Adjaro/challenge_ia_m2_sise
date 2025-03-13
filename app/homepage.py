@@ -3,6 +3,8 @@ import sys
 import pandas as pd
 import streamlit as st
 import requests
+from utils.ia import read_pdf, analyze_cv, analyze_cv_offre_emploi , calculate_similarity
+from utils.classFactory import ScrapingFactory
 
 def homepage():
     st.title("Bienvenue sur JobMatch")
@@ -17,6 +19,11 @@ def homepage():
             st.session_state['uploaded_cv'] = uploaded_cv
             cv_filename = uploaded_cv.name
             st.session_state['cv_filename'] = cv_filename
+
+            cv_text = read_pdf(uploaded_cv)
+            json = analyze_cv(cv_text)
+            st.write(json)
+            # st.write(cv_text)
             st.success(f"'{cv_filename}' chargé avec succès")
     
     with col2:
@@ -24,10 +31,16 @@ def homepage():
         url_offre = st.text_input("Insérer ici le lien de l'offre d'emploi")
         if url_offre:
             try:
-                response = requests.get(url_offre)
-                response.raise_for_status()
+                scraper = ScrapingFactory()
+                brute = scraper.scrap_one(url_offre)
+                offre = analyze_cv_offre_emploi(brute['description'])
+                st.write(offre)
+                # response = requests.get(url_offre)
+                # response.raise_for_status()
             except requests.exceptions.RequestException as e:
                 st.error(f"Erreur lors du chargement de l'offre d'emploi: {e}")
             else:
                 st.success("L'URL de l'offre d'emploi est valide")
-    
+    score = calculate_similarity(json, offre)
+    st.write(f"Score de similarité: {score}")
+    # st.write("")
