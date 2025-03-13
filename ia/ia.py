@@ -385,7 +385,7 @@ def extraction_info_perso(text_brut: str) -> str:
     - Numéro de téléphone
     - Adresse
 
-    Si une information est manquante, retourne `Non réseigner` pour cette clé.
+    Si une information est manquante, retourne une chaine vide "" pour cette clé.
 
     Texte brut du CV :
     "{text_brut}"
