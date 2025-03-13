@@ -6,6 +6,7 @@ import numpy as np
 import requests
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import json
 
 load_dotenv()
 
@@ -168,9 +169,7 @@ def calculate_similarity(text1: str, text2: str) -> float:
 
 
 #### Transformation de l'offre d'emploi au même format que le CV
-def analyze_offre_emploi(
-    offre: str, temperature: float = 0.01, max_tokens: int = 1500
-) -> str:
+def analyze_offre_emploi(offre: str, temperature: float = 0.01, max_tokens: int = 1500) -> str:
     """
     Analyse une offre d'emploi en format texte et retourne les informations structurées en JSON.
 
@@ -189,8 +188,9 @@ def analyze_offre_emploi(
         reformulation_prompt = f"""
         À partir de cette offre d'emploi, extrais les informations suivantes au format JSON. 
         Si une information n'est pas explicitement mentionnée dans le texte, retourne `null` ou une liste vide.
+        De plus la disponibilité correspond à la date de début du poste.
         Ne devine pas les informations manquantes et ne retourne que ce qui est clairement présent dans le texte.
-
+        
         Format JSON attendu :
         {{
             "Formation": [
@@ -209,7 +209,7 @@ def analyze_offre_emploi(
             ],
             "Profil": {{
                 "titre": "str",  // Ex: "Développeur Full-Stack"
-                "disponibilite": "str"  // Ex: "Immédiate"
+                "disponibilite": "str"  // Ex: "dd-mm-yyyy"
             }}
         }}
 
@@ -230,13 +230,82 @@ def analyze_offre_emploi(
         # Extraire et parser le JSON de la réponse
         resultat = offre_reformuler["choices"][0]["message"]["content"].strip()
         return resultat
-
+    
     except Exception as e:
         raise Exception(f"Erreur lors de l'analyse du CV: {str(e)}")
 
 
 # print(offre_emploi_to_json(offre))
 
+def calculate_section_similarity(cv_reformule: str, offre_emploi_reformule: str) -> dict:
+    """
+    Calcule les similarités détaillées entre les différentes sections d'un CV et une offre d'emploi.
+    
+    Args:
+        cv_reformule (str): Informations du CV au format JSON string
+        offre_emploi_reformule (str): Informations de l'offre d'emploi au format JSON string
+        
+    Returns:
+        dict: Dictionnaire contenant les scores de similarité pour chaque section
+        
+    Exemple:
+        {
+            'formation': float,
+            'competences': float,
+            'experiences': float,
+            'profil': float,
+        }
+    """
+    try:
+        # Conversion des chaînes JSON en dictionnaires
+        cv_json = json.loads(cv_reformule)
+        offre_emploi_json = json.loads(offre_emploi_reformule)
+        
+        # Calcul des similarités pour chaque section
+        similarites = {}
+        
+        # Similarité de formation
+        formation_candidat = cv_json.get("Formation", "")
+        formation_attendue = offre_emploi_json.get("Formation", "")
+        similarites['formation'] = calculate_similarity(
+            str(formation_candidat), 
+            str(formation_attendue)
+        )
+        
+        # Similarité des compétences
+        competences_candidat = cv_json.get("Competences", [])
+        competences_attendues = offre_emploi_json.get("Competences", [])
+        similarites['competences'] = calculate_similarity(
+            str(competences_candidat), 
+            str(competences_attendues)
+        )
+        
+        # Similarité des expériences
+        experiences_candidat = cv_json.get("Experiences", [])
+        experiences_attendues = offre_emploi_json.get("Experiences", [])
+        similarites['experiences'] = calculate_similarity(
+            str(experiences_candidat), 
+            str(experiences_attendues)
+        )
+        
+        # Similarité du profil
+        profil_candidat = cv_json.get("Profil", {})
+        profil_attendu = offre_emploi_json.get("Profil", {})
+        similarites['profil'] = calculate_similarity(
+            str(profil_candidat), 
+            str(profil_attendu)
+        )
+        
+        return similarites
+        
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Erreur lors du parsing JSON : {str(e)}")
+    except Exception as e:
+        raise Exception(f"Erreur lors du calcul des similarités : {str(e)}")
+
+
+# calculate_section_similarity(CV_reformuler, job_offer_reforumer)
+# print(calculate_section_similarity(CV_reformuler, job_offer_reforumer)['formation'])
 
 # Example usage
 if __name__ == "__main__":
