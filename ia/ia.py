@@ -524,7 +524,7 @@ def generate_lettre_motivation(text_brut: str, job_offer:str) ->str:
 
 
  
-=======
+
 # # Example usage
 # if __name__ == "__main__":
 #     file_path = "CV_V4_EN.pdf"

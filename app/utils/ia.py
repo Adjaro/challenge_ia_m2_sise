@@ -8,8 +8,9 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime
 import locale
-from monitoring_ecologie import EnvironmentMetrics
+from .monitoring_ecologie import EnvironmentMetrics
 import json
+import streamlit as st
 
 load_dotenv()
 
@@ -98,7 +99,7 @@ def get_energy_usage(response: litellm.ModelResponse):
 
         return energy_usage, gwp
 
-    return None, None
+    return 0, 0
 
 ############################### FIN Monitoring ###############################
 
@@ -164,6 +165,8 @@ def analyze_cv(text_brut: str, temperature: float = 0.01, max_tokens: int = 1500
         resultat = response["choices"][0]["message"]["content"].strip()
 
         # Impact écologique
+        monitoring_environnement = st.session_state["monitoring_environnement"]
+
         energy_usage, gwp = get_energy_usage(response=response)
         
         monitoring_environnement.update_metrics(new_gwp=gwp, new_energy=energy_usage)
@@ -287,6 +290,8 @@ def analyze_offre_emploi(offre: str, temperature: float = 0.01, max_tokens: int 
         resultat = offre_reformuler["choices"][0]["message"]["content"].strip()
 
         # Impact écologique
+        monitoring_environnement = st.session_state["monitoring_environnement"]
+
         energy_usage, gwp = get_energy_usage(response=offre_reformuler)
         monitoring_environnement.update_metrics(new_gwp=gwp, new_energy=energy_usage)
 
@@ -409,6 +414,8 @@ def extraction_info_perso(text_brut: str) -> str:
             )
     
     # Impact écologique
+    monitoring_environnement = st.session_state["monitoring_environnement"]
+
     energy_usage, gwp = get_energy_usage(response=resultat_extraction_info_perso)
     monitoring_environnement.update_metrics(new_gwp=gwp, new_energy=energy_usage)
     
@@ -509,6 +516,8 @@ def generate_lettre_motivation(text_brut: str, job_offer:str) ->str:
 
 
     # Impact écologique
+    monitoring_environnement = st.session_state["monitoring_environnement"]
+    
     energy_usage, gwp = get_energy_usage(response=Lettre_motiv_genere)
     monitoring_environnement.update_metrics(new_gwp=gwp, new_energy=energy_usage)
 
@@ -524,7 +533,6 @@ def generate_lettre_motivation(text_brut: str, job_offer:str) ->str:
 
 
  
-=======
 # # Example usage
 # if __name__ == "__main__":
 #     file_path = "CV_V4_EN.pdf"
@@ -532,4 +540,4 @@ def generate_lettre_motivation(text_brut: str, job_offer:str) ->str:
 #     cv_info = analyze_cv(text)
 #     # score = score_cv_against_job(cv_info, job_offer)
 #     # print(f"Score de correspondance: {score}")
- 
+

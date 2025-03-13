@@ -8,8 +8,13 @@ from dotenv import find_dotenv, load_dotenv
 # Importation des pages de l'application
 from homepage import homepage
 from componentsAlexis import offre_emploi_page
-from  components import show_sidebar, comparer_cv
+from components import show_sidebar, comparer_cv
 
+from utils.monitoring_ecologie import EnvironmentMetrics
+
+# Initialize monitoring_environnement in session state
+if "monitoring_environnement" not in st.session_state:
+    st.session_state["monitoring_environnement"] = EnvironmentMetrics()
 
 
 # Charger les variables d'environnement
@@ -18,16 +23,21 @@ API_KEY = os.getenv("MISTRAL_API_KEY")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 if not API_KEY:
-    st.warning("Veuillez ajouter votre clé API Mistral dans le fichier `.env`. Redémarrez l'application après avoir ajouté la clé.")
+    st.warning(
+        "Veuillez ajouter votre clé API Mistral dans le fichier `.env`. Redémarrez l'application après avoir ajouté la clé."
+    )
     st.stop()
 
 if not HF_TOKEN:
-    st.warning("Veuillez ajouter votre token Hugging Face dans le fichier `.env`. Redémarrez l'application après avoir ajouté le token.")
+    st.warning(
+        "Veuillez ajouter votre token Hugging Face dans le fichier `.env`. Redémarrez l'application après avoir ajouté le token."
+    )
     st.stop()
- 
+
 
 # CSS personnalisé pour centrer la sidebar, arrondir les bordures, ajouter une couleur de fond et des marges
-st.markdown("""
+st.markdown(
+    """
     <style>
         /* Centrer la sidebar */
         section[data-testid="stSidebar"] {
@@ -71,17 +81,17 @@ st.markdown("""
             color: #615533 !important; /* Couleur du texte des titres */
         }
     </style>
-""", unsafe_allow_html=True)
-
+""",
+    unsafe_allow_html=True,
+)
 
 
 # Menu de navigation
 # init_state()
 
-if ("uploaded_cv" not in st.session_state):
+if "uploaded_cv" not in st.session_state:
     homepage()
 elif "uploaded_cv" in st.session_state and "url" not in st.session_state:
     cv_info = st.session_state["cv_json"]
     show_sidebar(cv_info)
     comparer_cv()
- 
