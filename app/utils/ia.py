@@ -6,6 +6,9 @@ import numpy as np
 import requests
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+from datetime import datetime
+import locale
+
 import json
 
 load_dotenv()
@@ -303,14 +306,156 @@ def calculate_section_similarity(cv_reformule: str, offre_emploi_reformule: str)
     except Exception as e:
         raise Exception(f"Erreur lors du calcul des similarités : {str(e)}")
 
-
 # calculate_section_similarity(CV_reformuler, job_offer_reforumer)
 # print(calculate_section_similarity(CV_reformuler, job_offer_reforumer)['formation'])
 
-# Example usage
-if __name__ == "__main__":
-    file_path = "CV_V4_EN.pdf"
-    text = read_pdf(file_path)
-    cv_info = analyze_cv(text)
-    # score = score_cv_against_job(cv_info, job_offer)
-    # print(f"Score de correspondance: {score}")
+def extraction_info_perso(text_brut: str) -> str:
+    """
+    Extrait les informations personnelles d'un CV en format texte brut.
+
+    Args:
+        text_brut (str): Texte brut du CV à analyser
+
+    Returns:
+        str: Informations personnelles extraites du CV en format JSON like
+    """
+
+    prompt_extraction_info_perso = f"""
+    Extrait les informations personnelles suivantes du texte brut d'un CV et retourne-les au format JSON :
+    - Nom et prénom
+    - Email
+    - Numéro de téléphone
+    - Adresse
+
+    Si une information est manquante, retourne `Non réseigner` pour cette clé.
+
+    Texte brut du CV :
+    "{text_brut}"
+
+    Format JSON attendu :
+    {{
+        "nom_prenom": "str",
+        "email": "str",
+        "telephone": "str",
+        "adresse": "str"
+    }}
+
+    Ne retourne que le JSON, sans commentaires supplémentaires.
+    """
+    resultat_extraction_info_perso = litellm.completion(
+                model="mistral/mistral-tiny",  
+                messages=[{"role": "user", "content": prompt_extraction_info_perso}],
+                max_tokens=1500,
+                temperature=0.1,
+                api_key=os.getenv("MISTRAL_API_KEY"),
+            )
+    
+    return resultat_extraction_info_perso["choices"][0]["message"]["content"].strip()
+    
+# print(extraction_info_perso(text_brut))
+
+
+def generate_lettre_motivation(text_brut: str, job_offer:str) ->str:
+    """
+    Génère une lettre de motivation personnalisée en fonction des informations extraites du CV et de l'offre d'emploi.
+    
+    Args:
+        text_brut (str): Texte brut extrait du CV du candidat
+        job_offer (str): Description de l'offre d'emploi
+        
+    Returns:
+        str: Lettre de motivation générée au format texte
+    
+    """
+    information_perso = extraction_info_perso(text_brut)
+    resultat_extraction_info_perso_json = json.loads(information_perso)
+
+    nom = resultat_extraction_info_perso_json.get("nom_prenom")
+    email = resultat_extraction_info_perso_json.get("email", "").strip()
+    # Remove all spaces from email
+    email = "".join(email.split())
+    telephone = resultat_extraction_info_perso_json.get("telephone")
+    adresse = resultat_extraction_info_perso_json.get("adresse")
+
+
+    # Set French locale
+    try:
+        locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')  # Linux/Mac
+    except:
+        locale.setlocale(locale.LC_TIME, 'fra_fra')  # Windows
+
+    # Get date in French format
+    date = datetime.now().strftime("%d %B %Y")
+
+    prompt_lettre_motivation = f"""
+    Tu es un assistant qui rédige des lettres de motivation personnalisées et professionnelles. Voici les informations nécessaires :
+
+    **Informations du candidat :**
+    - Nom : {nom}
+    - Email : {email}
+    - Téléphone : {telephone}
+    - Adresse : {adresse}
+    - Date : {date}
+
+    **Texte brut du CV :**
+    {text_brut}
+
+    **Offre d'emploi :**
+    {job_offer}
+
+    **Instructions :**
+    1. Rédige une lettre de motivation au format A4, bien structurée et professionnelle.
+    2. Mets en avant les compétences et expériences du candidat qui correspondent aux exigences du poste.
+    3. Mentionne des éléments spécifiques de l'entreprise ou du poste pour montrer que la candidature est personnalisée.
+    4. Explique pourquoi le candidat est motivé pour rejoindre cette entreprise en particulier.
+    5. Utilise un ton professionnel et évite les phrases génériques.
+    6. Ne laisse pas de champs vides et ne devine pas les informations manquantes.
+
+    **Format de la lettre :**
+    - En-tête : Nom, prénom, adresse, email, téléphone, date.
+    - Introduction : Présentation du candidat et motivation pour le poste.
+    - Corps : Compétences et expériences en lien avec le poste.
+    - Conclusion : Expression de l'enthousiasme et disponibilité pour un entretien.
+
+    **Exemple de structure :**
+    {nom}
+    {email}
+    {telephone}
+    {adresse}
+    {date}
+
+    Madame, Monsieur,
+    Je me permets de vous adresser ma candidature pour le poste de [poste] au sein de [entreprise]. [Motivation personnalisée].
+
+    Avec mon expérience en [domaine] et mes compétences en [compétences], je suis convaincu de pouvoir contribuer à [objectif de l'entreprise]. [Détail des expériences et compétences pertinentes].
+
+    Je serais ravi de discuter de ma candidature lors d'un entretien. Je reste à votre disposition pour toute information complémentaire.
+
+    Veuillez agréer, Madame, Monsieur, mes salutations distinguées.
+    {nom}
+    """
+        
+    Lettre_motiv_genere = litellm.completion(
+                model="mistral/ministral-3b-latest",  
+                messages=[{"role": "user", "content": prompt_lettre_motivation}],
+                max_tokens=1500,
+                temperature=0.3,
+                api_key=os.getenv("MISTRAL_API_KEY"),
+            )
+
+    resultat = Lettre_motiv_genere["choices"][0]["message"][
+                "content"
+            ].strip()
+    
+    return resultat
+
+# print(generate_lettre_motivation(text_brut, job_offer))
+
+
+# # Example usage
+# if __name__ == "__main__":
+#     file_path = "CV_V4_EN.pdf"
+#     text = read_pdf(file_path)
+#     cv_info = analyze_cv(text)
+#     # score = score_cv_against_job(cv_info, job_offer)
+#     # print(f"Score de correspondance: {score}")
