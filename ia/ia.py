@@ -452,10 +452,10 @@ def generate_lettre_motivation(text_brut: str, job_offer:str) ->str:
 # print(generate_lettre_motivation(text_brut, job_offer))
 
 
-# Example usage
-if __name__ == "__main__":
-    file_path = "CV_V4_EN.pdf"
-    text = read_pdf(file_path)
-    cv_info = analyze_cv(text)
-    # score = score_cv_against_job(cv_info, job_offer)
-    # print(f"Score de correspondance: {score}")
+# # Example usage
+# if __name__ == "__main__":
+#     file_path = "CV_V4_EN.pdf"
+#     text = read_pdf(file_path)
+#     cv_info = analyze_cv(text)
+#     # score = score_cv_against_job(cv_info, job_offer)
+#     # print(f"Score de correspondance: {score}")
