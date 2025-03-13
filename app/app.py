@@ -6,11 +6,8 @@ from streamlit_option_menu import option_menu
 from dotenv import find_dotenv, load_dotenv
 
 # Importation des pages de l'application
-# from homepage import homepage
-# from synthese_cv_llm import synthese_cv_llm
-
-
-from components import show_sidebar
+from homepage import homepage
+from componentsAlexis import offre_emploi_page
 
 
 # Charger les variables d'environnement
@@ -29,23 +26,48 @@ if not HF_TOKEN:
 
 
 
-# Configuration de la page
-# st.set_page_config(page_title="SISE Classmate", page_icon="✨", layout="centered")
-st.set_page_config(page_title="SISE Classmate", page_icon="✨", layout="wide")
+# # Sidebar
+# with st.sidebar:
 
+#     if "cv_filename" in st.session_state:
+#         cv_filename = st.session_state['cv_filename']
+#         st.sidebar.markdown(
+#             f"""
+#             <div style="background-color: blue; padding: 10px; word-wrap: break-word;">
+#             CV uploadé : <span style="font-size: smaller;">{cv_filename}</span>
+#             </div>
+#             """,
+#             unsafe_allow_html=True
+#         )
+    
+#     st.sidebar.markdown("<br>", unsafe_allow_html=True)  # Add space between the two markdowns
 
-# Mise en page personnalisée
-st.markdown(
-    """
-    <style>
-        .block-container {
-            padding-top: 20px;
-            padding-bottom: 0px;
-        }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
+#     if "url_offre" in st.session_state:
+#         url_offre = st.session_state['url_offre']
+#         st.sidebar.markdown(
+#             f"""
+#             <div style="background-color: green; padding: 10px; word-wrap: break-word;">
+#             URL de l'offre : <span style="font-size: smaller;">{url_offre}</span>
+#             </div>
+#             """,
+#             unsafe_allow_html=True
+#         )
+    
+#     st.sidebar.markdown("<br>", unsafe_allow_html=True)  # Add space between the two markdowns
+
+#     if "cv_filename" in st.session_state :
+#         améliorer_cv = st.button("Améliorer mon CV")
+    
+#     if "cv_filename" in st.session_state and "url_offre" in st.session_state:
+#         matching_cv_offre = st.button("Matching CV-offre d'emploi")
+        
+    
+
+# Gestion de la navigation séquentielle
+if "uploaded_cv" not in st.session_state :
+    homepage()
+elif "uploaded_cv" in st.session_state and "url" not in st.session_state:
+    offre_emploi_page()
 
 
 
@@ -80,10 +102,10 @@ cv_info = {
 # show_sidebar(cv_info)
 
 
-st.session_state['uploaded_cv'] = True
-if st.session_state.get('uploaded_cv') is not None:
-    # cv_info = show_sidebar()
-    show_sidebar(cv_info)
+# st.session_state['uploaded_cv'] = True
+# if st.session_state.get('uploaded_cv') is not None:
+#     # cv_info = show_sidebar()
+#     show_sidebar(cv_info)
 
 
 # if cv_info:
