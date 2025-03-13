@@ -76,7 +76,7 @@ def analyze_cv(
 
         Format JSON attendu :
         {{
-            "Diplome": [
+            "Formation": [
                 {{
                     "niveau_etudes": "str",  // Ex: "Licence", "Master", "Doctorat"
                     "domaine_etudes": ["str"]  // Ex: ["Informatique", "Mathématiques"]
