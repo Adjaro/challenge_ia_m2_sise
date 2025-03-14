@@ -99,7 +99,7 @@ def get_energy_usage(response: litellm.ModelResponse):
 
         return energy_usage, gwp
 
-    return 0, 0
+    return 0.0012690997062349395, 0.014055733644698878 # Estimation pour le modèle qu'on utilise
 
 ############################### FIN Monitoring ###############################
 
@@ -164,12 +164,11 @@ def analyze_cv(text_brut: str, temperature: float = 0.01, max_tokens: int = 1500
         # Extraire et parser le JSON de la réponse
         resultat = response["choices"][0]["message"]["content"].strip()
 
-        # Impact écologique
-        monitoring_environnement = st.session_state["monitoring_environnement"]
-
-        energy_usage, gwp = get_energy_usage(response=response)
         
-        monitoring_environnement.update_metrics(new_gwp=gwp, new_energy=energy_usage)
+        energy_usage, gwp = get_energy_usage(response=response)
+
+        st.session_state["monitoring_environnement"].update_metrics(new_gwp=gwp, new_energy=energy_usage)
+
 
         # Ajout à une variable globale pour utilisation ultérieure ?
 
@@ -193,12 +192,26 @@ def get_embedding(text: str) -> np.ndarray:
     """
     headers = {"Authorization": f"Bearer {os.getenv("HF_TOKEN")}"}
     response = requests.post(
-        "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", # MiniLM-L12: ~14M paramètres
         headers=headers,
         json={"inputs": text, "options": {"wait_for_model": True}},
     )
     if response.status_code != 200:
         raise Exception(f"Erreur API : {response.status_code}, {response.text}")
+    
+    nb_chars = len(text)
+    # Estimation simple : 0.0001 kWh par 100 caractères
+    energy_usage = (nb_chars / 100) * 0.0001
+    # Estimation CO2 : 0.4 kg CO2 par kWh (moyenne mondiale)
+    carbon_impact = energy_usage * 0.4
+    
+    # Mise à jour du monitoring
+    monitoring_environnement = st.session_state["monitoring_environnement"]
+    monitoring_environnement.update_metrics(
+        new_gwp=carbon_impact,
+        new_energy=energy_usage
+    )
+    
     return np.array(response.json())
 
 
@@ -290,10 +303,11 @@ def analyze_offre_emploi(offre: str, temperature: float = 0.01, max_tokens: int 
         resultat = offre_reformuler["choices"][0]["message"]["content"].strip()
 
         # Impact écologique
-        monitoring_environnement = st.session_state["monitoring_environnement"]
 
         energy_usage, gwp = get_energy_usage(response=offre_reformuler)
-        monitoring_environnement.update_metrics(new_gwp=gwp, new_energy=energy_usage)
+        
+        st.session_state["monitoring_environnement"].update_metrics(new_gwp=gwp, new_energy=energy_usage)
+
 
         return resultat
     
@@ -414,10 +428,9 @@ def extraction_info_perso(text_brut: str) -> str:
             )
     
     # Impact écologique
-    monitoring_environnement = st.session_state["monitoring_environnement"]
 
     energy_usage, gwp = get_energy_usage(response=resultat_extraction_info_perso)
-    monitoring_environnement.update_metrics(new_gwp=gwp, new_energy=energy_usage)
+    st.session_state["monitoring_environnement"].update_metrics(new_gwp=gwp, new_energy=energy_usage)
     
     return resultat_extraction_info_perso["choices"][0]["message"]["content"].strip()
     
@@ -516,10 +529,11 @@ def generate_lettre_motivation(text_brut: str, job_offer:str) ->str:
 
 
     # Impact écologique
-    monitoring_environnement = st.session_state["monitoring_environnement"]
     
     energy_usage, gwp = get_energy_usage(response=Lettre_motiv_genere)
-    monitoring_environnement.update_metrics(new_gwp=gwp, new_energy=energy_usage)
+    
+    st.session_state["monitoring_environnement"].update_metrics(new_gwp=gwp, new_energy=energy_usage)
+
 
     resultat = Lettre_motiv_genere["choices"][0]["message"][
                 "content"

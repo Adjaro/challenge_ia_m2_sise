@@ -93,7 +93,7 @@ def show_sidebar(cv_info: dict) -> str:
             class_impact = st.session_state["monitoring_environnement"]
             gwp, energy_usage = class_impact.get_metrics()
             st.success(
-                f"Impact environnemental:\nGWP: {gwp} kg CO2e\nEnergy Usage: {energy_usage} kWh"
+                f"Impact environnemental:\nGWP: {gwp} kgCO2eq \n Energy Usage: {energy_usage} kWh"
             )
 
         st.markdown("---")
@@ -425,4 +425,5 @@ def show_modifier_cv():
             st.success("Les modifications ont été enregistrées avec succès !")
             st.session_state["modifications"] = True
             # st.session_state["suivant"] = True
+
             st.rerun()  # Recharger la page pour appliquer les modifications
