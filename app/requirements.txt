@@ -8,3 +8,4 @@ streamlit
 streamlit_option_menu
 sentence_transformers
 python-docx
+weasyprint
