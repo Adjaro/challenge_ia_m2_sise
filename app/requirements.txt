@@ -13,3 +13,4 @@ datetime
 locale
 scikit-learn
 numpy
+weasyprint

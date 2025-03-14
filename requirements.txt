@@ -7,3 +7,4 @@ pandas
 streamlit
 streamlit_option_menu
 sentence_transformers
+weasyprint

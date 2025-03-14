@@ -4,7 +4,7 @@ from PIL import Image  # Pour gérer l'image du logo
 import json
 from docx import Document
 from io import BytesIO
-
+from  utils.classCVGenerator import CVGenerator
 from utils.ia import (
     analyze_offre_emploi,
     calculate_section_similarity,
@@ -272,7 +272,22 @@ def show_comparaison_cv():
 
         with col1:
             if st.button("Generer un cv"):
-                show_modifier_cv()
+                 # instancier le générateur de CV
+                cv_generator = CVGenerator()
+                cv_text = st.session_state["cv_brut"]
+                job_data = st.session_state["offre_emploi_brut"]
+                generate_perfect_cv = cv_generator.generate_perfect_cv(cv_text, job_data)
+                clean_text = cv_generator.clean_cv_text(generate_perfect_cv)
+                export_cv_to_pdf = cv_generator.export_cv_to_pdf(clean_text)
+                with open(export_cv_to_pdf, "rb") as pdf_file:
+                            st.download_button(
+                                label="📥 Télécharger le CV en PDF",
+                                data=pdf_file,
+                                file_name="CV_Optimisé.pdf",
+                                mime="application/pdf"
+                            )
+                         
+
 
         with col3:
             if st.button("Generer une lettre de motivation personnalisée"):
@@ -587,8 +602,10 @@ def show_offre_emploi():
     # Affichage des offres avec barre de progression
     scraper = ScrapingFactory()
     with st.spinner("Recherche des offres en cours..."):
-        offres = scraper.scrap_many("informatique", limit=2)
+        domain_recherche = st.session_state.get('domaine_offre', "")
 
+        offres = scraper.scrap_many(domain_recherche, limit=5)
+        
         progress_bar = st.progress(0)
         liste_offres_analyser = []
 
