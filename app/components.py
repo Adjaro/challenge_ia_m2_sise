@@ -99,7 +99,9 @@ def show_sidebar(cv_info: dict) -> str:
         if st.session_state.get("domaine_page") == 1:
             entrer_domain()
         elif st.session_state.get("domaine_page") == 2:
+            st.session_state["domaine_page"] = None
             show_offre_emploi()
+            
 
         # Button "Impact environnemental"
         if st.button("Impact environnemental"):
@@ -340,7 +342,7 @@ def show_comparaison_cv():
                     elif key.lower() == "formation":
                         for formation in cv_data.get("Formation", []):
                             st.write(
-                                f"• {formation.get('niveau_etudes')} - {', '.join(formation.get('domaine_etudes', []))}"
+                                f"• {formation.get('niveau_etudes')} - {formation.get('domaine_etudes', [])}"
                             )
                     elif key.lower() == "experiences":
                         for exp in cv_data.get("Experiences", []):
@@ -413,15 +415,20 @@ def entrer_domain():
         if not domaine:
             st.error("Veuillez entrer un domaine pour l'offre d'emploi.")
             return
+        else: 
+            st.session_state["domaine_1"] = domaine
+
 
         # Validation du département (optionnel mais doit être numérique)
         if departement and not departement.isdigit():
             st.error("Le département doit être un nombre valide.")
             return
+        else:
+            st.session_state["departement_offre"] = departement
 
         # Enregistrer les informations dans la session
-        st.session_state["domaine_offre"] = domaine
-        st.session_state["departement_offre"] = departement
+        # st.session_state["domaine_offre"] = domaine
+        # st.session_state["departement_offre"] = departement
         st.session_state["domaine_page"] = 2  # Passer à la page suivante
 
         # Fermer la boîte de dialogue et recharger la page
@@ -585,8 +592,12 @@ def show_offre_emploi():
         '<h2 class="search-title">🔍 Résultats de recherche</h2>',
         unsafe_allow_html=True,
     )
+    # domain_recherche =
+    # domain_recherche = st.session_state.get("domaine_offre", "Informatique")
+    # domain_recherche = st.session_state['domaine_offre'] 
+    # domain_recherche = 'Informatique'
+    domain_recherche = st.session_state.get("domaine_1", "")
 
-    domain_recherche = st.session_state.get("domaine_offre", "")
     departement_recherche = st.session_state.get("departement_offre", "")
 
     st.markdown(
@@ -603,9 +614,9 @@ def show_offre_emploi():
     # Affichage des offres avec barre de progression
     scraper = ScrapingFactory()
     with st.spinner("Recherche des offres en cours..."):
-        domain_recherche = st.session_state.get('domaine_offre', "")
+        # domain_recherche = st.session_state.get('domaine_offre', "")
 
-        offres = scraper.scrap_many(domain_recherche, limit=5)
+        offres = scraper.scrap_many(domain_recherche, limit=10)
         
         progress_bar = st.progress(0)
         liste_offres_analyser = []
@@ -614,7 +625,7 @@ def show_offre_emploi():
             progress = (i + 1) / len(offres)
             progress_bar.progress(progress)
 
-            offre_text = f"{offre['description']} "
+            offre_text = f"{offre['description']}"
             url = offre["origineOffre"]["urlOrigine"]
             # st.write(url)
             analyse = analyze_offre_emploi(offre_text)
@@ -692,7 +703,8 @@ def show_modifier_cv():
             )
             experience["domaine_activite"] = st.text_input(
                 "Domaine d'activité (séparés par des virgules)",
-                ", ".join(experience.get("domaine_activite", [])),
+                experience.get("domaine_activite", []),
+                # "".join(experience.get("domaine_activite", [])),
                 key=f"domaine_activite_{i}",
             )
             experience["duree"] = st.text_input(
@@ -711,7 +723,8 @@ def show_modifier_cv():
             )
             formation["domaine_etudes"] = st.text_input(
                 "Domaine d'études (séparés par des virgules)",
-                ", ".join(formation.get("domaine_etudes", [])),
+                formation.get("domaine_etudes", []),
+                # " ".join(formation.get("domaine_etudes", [])),
                 key=f"domaine_etudes_{i}",
             )
 
