@@ -5,6 +5,8 @@ import json
 from utils.ia import analyze_offre_emploi, calculate_section_similarity, calculate_similarity
 from utils.classFactory import ScrapingFactory
 import time
+from utils.monitoring_ecologie import EnvironmentMetrics
+
 LOGO_PATH = "logo.png"
 
 
@@ -12,7 +14,8 @@ def set_custom_style():
     """
     Définit le style CSS personnalisé pour la sidebar et les boutons.
     """
-    st.markdown("""
+    st.markdown(
+        """
         <style>
             /* Style pour la sidebar */
             section[data-testid="stSidebar"] {
@@ -42,7 +45,10 @@ def set_custom_style():
             }
  
         </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
+
 
 def load_logo():
     """
@@ -50,11 +56,13 @@ def load_logo():
     """
     st.sidebar.image("logo.png", width=250)  # Remplacez par le chemin de votre logo
 
+
 def show_modifier_cv():
     """
     Affiche la boîte de dialogue pour modifier le CV.
     """
     st.success("Fonctionnalité de modification du CV")
+
 
 def show_sidebar(cv_info: dict) -> str:
     """
@@ -87,56 +95,70 @@ def show_sidebar(cv_info: dict) -> str:
         elif st.session_state.get('domaine_page') == 2:
             show_offre_emploi()
 
+        # Button "Impact environnemental"
+        if st.button("Impact environnemental"):
+            class_impact = st.session_state["monitoring_environnement"]
+            gwp, energy_usage = class_impact.get_metrics()
+            st.success(
+                f"Impact environnemental:\nGWP: {gwp} kgCO2eq \n Energy Usage: {energy_usage} kWh"
+            )
+
         st.markdown("---")
 
+
 def comparer_cv_offre():
-    analyse = st.session_state.get('offre_json', {})
+    analyse = st.session_state.get("offre_json", {})
     str_analyse = json.dumps(analyse)
 
-    cv_json = st.session_state.get('cv_json', {})
+    cv_json = st.session_state.get("cv_json", {})
     str_cv = json.dumps(cv_json)
 
     comparaison = calculate_section_similarity(
-        cv_reformule= str_cv,
-        offre_emploi_reformule= str_analyse
+        cv_reformule=str_cv, offre_emploi_reformule=str_analyse
     )
-    st.session_state['comparaison'] = comparaison
-    return omparaisonc
- 
- 
+    st.session_state["comparaison"] = comparaison
+    return comparaison
+
+
 def comparer_cv():
     """
     Affiche une interface pour comparer un CV à une offre d'emploi.
     """
     st.container(height=200, border=False)
     # Conteneur pour l'en-tête
-    with st.container( border=False):
+    with st.container(border=False):
         st.markdown("### 📄 Comparer votre CV à une offre d'emploi")
-        st.markdown("Saisissez l'URL de l'offre d'emploi et posez une question pour obtenir une comparaison détaillée.")
+        st.markdown(
+            "Saisissez l'URL de l'offre d'emploi et posez une question pour obtenir une comparaison détaillée."
+        )
 
     # Champ de saisie pour l'URL de l'offre d'emploi
     # st.text_area(label, value="", height=None, max_chars=None, key=None, help=None, on_change=None, args=None, kwargs=None, *, placeholder=None, disabled=False, label_visibility="visible")
-    
+
     url = st.text_area(
         label="URL de l'offre d'emploi",
         placeholder="https://www.example.com",
         help="Veuillez saisir l'URL de l'offre d'emploi à comparer.",
-        height= 70
+        height=70,
     )
 
     # Bouton pour lancer la comparaison
     if st.button("Comparer", key="compare_button"):
         if url.strip() == "" or url == "https://www.example.com":
             st.warning("Veuillez saisir une URL valide.")
-        elif "candidat.francetravail.fr" not in url.lower():  # Vérifier que l'URL contient "france travail"
-            st.error("L'URL doit provenir de France Travail. Veuillez saisir une URL valide.")
+        elif (
+            "candidat.francetravail.fr" not in url.lower()
+        ):  # Vérifier que l'URL contient "france travail"
+            st.error(
+                "L'URL doit provenir de France Travail. Veuillez saisir une URL valide."
+            )
         else:
 
             with st.spinner("Comparaison en cours...", show_time=True):
                 # time.sleep(5)
                 progress_bar = st.progress(0)
                 scraper = ScrapingFactory()
-                
+
                 progress_bar.progress(10)
                 offre_emploi = scraper.scrap_one(url)
                 # st.write(offre_emploi)
@@ -154,14 +176,17 @@ def comparer_cv():
 
                 progress_bar.progress(100)
                 st.success("La comparaison a été effectuée avec succès !")
-                
+
                 show_comparaison_cv()
 
                 if offre_emploi is None:
-                    st.error("Impossible de récupérer les informations de l'offre d'emploi. Veuillez réessayer.")
+                    st.error(
+                        "Impossible de récupérer les informations de l'offre d'emploi. Veuillez réessayer."
+                    )
                     return
                 else:
                     st.write(comparaison)
+
 
 @st.dialog("Comparaison du CV", width="large")
 def show_comparaison_cv():
@@ -169,7 +194,8 @@ def show_comparaison_cv():
     Affiche un dialogue pour comparer le CV à une offre d'emploi avec un design amélioré.
     """
     # Custom CSS for the comparison display
-    st.markdown("""
+    st.markdown(
+        """
         <style>
             .comparison-header {
                 font-size: 24px;
@@ -201,13 +227,18 @@ def show_comparaison_cv():
                 border-left: 4px solid #4CAF50;
             }
         </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
-    comparaison = st.session_state.get('comparaison', {})
-    cv_data = st.session_state.get('cv_json', {})
-    offre_data = st.session_state.get('offre_json', {})
+    comparaison = st.session_state.get("comparaison", {})
+    cv_data = st.session_state.get("cv_json", {})
+    offre_data = st.session_state.get("offre_json", {})
 
-    st.markdown('<p class="comparison-header">🎯 Résultats de la comparaison</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="comparison-header">🎯 Résultats de la comparaison</p>',
+        unsafe_allow_html=True,
+    )
 
     # Create tabs for different views
     tab1, tab2 = st.tabs(["📊 Vue d'ensemble", "📑 Détails par section"])
@@ -215,20 +246,20 @@ def show_comparaison_cv():
     with tab1:
         # Overview with metrics
         col1, col2, col3, col4 = st.columns(4)
-        
+
         metrics = {
             "Formation": (comparaison.get("formation", 0) * 100, "🎓"),
             "Compétences": (comparaison.get("competences", 0) * 100, "💪"),
             "Expériences": (comparaison.get("experiences", 0) * 100, "💼"),
-            "Profil": (comparaison.get("profil", 0) * 100, "👤")
+            "Profil": (comparaison.get("profil", 0) * 100, "👤"),
         }
-        
-        for (label, (value, emoji)), col in zip(metrics.items(), [col1, col2, col3, col4]):
+
+        for (label, (value, emoji)), col in zip(
+            metrics.items(), [col1, col2, col3, col4]
+        ):
             with col:
                 st.metric(
-                    label=f"{emoji} {label}",
-                    value=f"{value:.1f}%",
-                    delta="match"
+                    label=f"{emoji} {label}", value=f"{value:.1f}%", delta="match"
                 )
         col1, col2 , col3 = st.columns([2, 2, 2])
 
@@ -245,13 +276,15 @@ def show_comparaison_cv():
             "Formation": ("formation", "🎓"),
             "Compétences": ("competences", "💪"),
             "Expériences": ("experiences", "💼"),
-            "Profil": ("profil", "👤")
+            "Profil": ("profil", "👤"),
         }
 
         for title, (key, emoji) in sections.items():
-            with st.expander(f"{emoji} {title} - {(comparaison.get(key, 0) * 100):.1f}% de correspondance"):
+            with st.expander(
+                f"{emoji} {title} - {(comparaison.get(key, 0) * 100):.1f}% de correspondance"
+            ):
                 col1, col2 = st.columns(2)
-                
+
                 with col1:
                     st.markdown("##### 📄 Votre CV")
                     st.markdown('<div class="section-content">', unsafe_allow_html=True)
@@ -259,15 +292,21 @@ def show_comparaison_cv():
                         st.write("• " + "\n• ".join(cv_data.get("Competences", [])))
                     elif key.lower() == "formation":
                         for formation in cv_data.get("Formation", []):
-                            st.write(f"• {formation.get('niveau_etudes')} - {', '.join(formation.get('domaine_etudes', []))}")
+                            st.write(
+                                f"• {formation.get('niveau_etudes')} - {', '.join(formation.get('domaine_etudes', []))}"
+                            )
                     elif key.lower() == "experiences":
                         for exp in cv_data.get("Experiences", []):
-                            st.write(f"• {exp.get('poste_occupe')} ({exp.get('duree')})")
+                            st.write(
+                                f"• {exp.get('poste_occupe')} ({exp.get('duree')})"
+                            )
                     elif key.lower() == "profil":
                         st.write(f"• Titre: {cv_data.get('Profil', {}).get('titre')}")
-                        st.write(f"• Disponibilité: {cv_data.get('Profil', {}).get('disponibilite')}")
-                    st.markdown('</div>', unsafe_allow_html=True)
-                
+                        st.write(
+                            f"• Disponibilité: {cv_data.get('Profil', {}).get('disponibilite')}"
+                        )
+                    st.markdown("</div>", unsafe_allow_html=True)
+
                 with col2:
                     st.markdown("##### 💼 Offre d'emploi")
                     st.markdown('<div class="section-content">', unsafe_allow_html=True)
@@ -275,24 +314,34 @@ def show_comparaison_cv():
                         st.write("• " + "\n• ".join(offre_data.get("Competences", [])))
                     elif key.lower() == "formation":
                         for formation in cv_data.get("Formation", []):
-                            st.write(f"• {offre_data.get('niveau_etudes')} - {', '.join(offre_data.get('domaine_etudes', []))}")
+                            st.write(
+                                f"• {offre_data.get('niveau_etudes')} - {', '.join(offre_data.get('domaine_etudes', []))}"
+                            )
                     elif key.lower() == "experiences":
                         for exp in offre_data.get("Experiences", []):
-                            st.write(f"• {exp.get('poste_occupe')} ({exp.get('duree')})")
+                            st.write(
+                                f"• {exp.get('poste_occupe')} ({exp.get('duree')})"
+                            )
                     elif key.lower() == "profil":
-                        st.write(f"• Titre: {offre_data.get('Profil', {}).get('titre')}")
-                        st.write(f"• Disponibilité: {offre_data.get('Profil', {}).get('disponibilite')}")
-                    st.markdown('</div>', unsafe_allow_html=True)
-
+                        st.write(
+                            f"• Titre: {offre_data.get('Profil', {}).get('titre')}"
+                        )
+                        st.write(
+                            f"• Disponibilité: {offre_data.get('Profil', {}).get('disponibilite')}"
+                        )
+                    st.markdown("</div>", unsafe_allow_html=True)
 
     # Overall recommendation
     total_score = sum(comparaison.values()) / len(comparaison)
     st.markdown("---")
     if total_score > 0.5:
-        st.success(f"✨ Votre profil correspond bien à cette offre avec une compatibilité globale de {total_score*100:.1f}%")
+        st.success(
+            f"✨ Votre profil correspond bien à cette offre avec une compatibilité globale de {total_score*100:.1f}%"
+        )
     else:
-        st.warning(f"⚠️ Votre profil présente quelques écarts avec cette offre (compatibilité: {total_score*100:.1f}%)")
-
+        st.warning(
+            f"⚠️ Votre profil présente quelques écarts avec cette offre (compatibilité: {total_score*100:.1f}%)"
+        )
 
 @st.dialog("Domaine de l'offre", width="medium")
 def entrer_domain():
@@ -505,24 +554,15 @@ def show_modifier_cv():
     cv_info peut être une chaîne JSON ou un dictionnaire Python.
     """
 
-    cv_info = st.session_state.get('cv_json', {
-        "Profil": {
-            "titre": "",
-            "disponibilite": ""
+    cv_info = st.session_state.get(
+        "cv_json",
+        {
+            "Profil": {"titre": "", "disponibilite": ""},
+            "Formation": [{"niveau_etudes": "", "domaine_etudes": []}],
+            "Competences": [],
+            "Experiences": [],
         },
-        "Formation": [
-            {
-                "niveau_etudes": "",
-                "domaine_etudes": []
-            }
-
-        ],
-        "Competences": [
-
-        ],
-        "Experiences": []
-
-    })
+    )
     # Si cv_info est une chaîne JSON, la convertir en dictionnaire
     if isinstance(cv_info, str):
         try:
@@ -533,7 +573,9 @@ def show_modifier_cv():
 
     # Vérifier que cv_info est un dictionnaire
     if not isinstance(cv_info, dict):
-        st.error("Les données du CV doivent être un dictionnaire ou une chaîne JSON valide.")
+        st.error(
+            "Les données du CV doivent être un dictionnaire ou une chaîne JSON valide."
+        )
         return
 
     st.markdown("### 📝 Visualisation et Modification du CSV")
@@ -542,13 +584,20 @@ def show_modifier_cv():
     # Section Profil
     with st.expander("👤 Profil", expanded=True):
         st.markdown("#### Profil")
-        cv_info["Profil"]["titre"] = st.text_input("Titre", cv_info["Profil"].get("titre", ""))
-        cv_info["Profil"]["disponibilite"] = st.text_input("Disponibilité", cv_info["Profil"].get("disponibilite", ""))
+        cv_info["Profil"]["titre"] = st.text_input(
+            "Titre", cv_info["Profil"].get("titre", "")
+        )
+        cv_info["Profil"]["disponibilite"] = st.text_input(
+            "Disponibilité", cv_info["Profil"].get("disponibilite", "")
+        )
 
     # Section Compétences
     with st.expander("🛠️ Compétences", expanded=False):
         st.markdown("#### Compétences")
-        competences_str = st.text_area("Liste des compétences (séparées par des virgules)", ", ".join(cv_info.get("Competences", [])))
+        competences_str = st.text_area(
+            "Liste des compétences (séparées par des virgules)",
+            ", ".join(cv_info.get("Competences", [])),
+        )
         cv_info["Competences"] = [c.strip() for c in competences_str.split(",")]
 
     # Section Expériences
@@ -556,24 +605,45 @@ def show_modifier_cv():
         st.markdown("#### Expériences")
         for i, experience in enumerate(cv_info.get("Experiences", [])):
             st.markdown(f"##### Expérience {i + 1}")
-            experience["poste_occupe"] = st.text_input("Poste occupé", experience.get("poste_occupe", ""), key=f"poste_occupe_{i}")
-            experience["domaine_activite"] = st.text_input("Domaine d'activité (séparés par des virgules)", ", ".join(experience.get("domaine_activite", [])), key=f"domaine_activite_{i}")
-            experience["duree"] = st.text_input("Durée", experience.get("duree", ""), key=f"duree_{i}")
+            experience["poste_occupe"] = st.text_input(
+                "Poste occupé",
+                experience.get("poste_occupe", ""),
+                key=f"poste_occupe_{i}",
+            )
+            experience["domaine_activite"] = st.text_input(
+                "Domaine d'activité (séparés par des virgules)",
+                ", ".join(experience.get("domaine_activite", [])),
+                key=f"domaine_activite_{i}",
+            )
+            experience["duree"] = st.text_input(
+                "Durée", experience.get("duree", ""), key=f"duree_{i}"
+            )
 
     # Section Formations
     with st.expander("🎓 Formations", expanded=False):
         st.markdown("#### Formations")
         for i, formation in enumerate(cv_info.get("Formation", [])):
             st.markdown(f"##### Formation {i + 1}")
-            formation["niveau_etudes"] = st.text_input("Niveau d'études", formation.get("niveau_etudes", ""), key=f"niveau_etudes_{i}")
-            formation["domaine_etudes"] = st.text_input("Domaine d'études (séparés par des virgules)", ", ".join(formation.get("domaine_etudes", [])), key=f"domaine_etudes_{i}")
+            formation["niveau_etudes"] = st.text_input(
+                "Niveau d'études",
+                formation.get("niveau_etudes", ""),
+                key=f"niveau_etudes_{i}",
+            )
+            formation["domaine_etudes"] = st.text_input(
+                "Domaine d'études (séparés par des virgules)",
+                ", ".join(formation.get("domaine_etudes", [])),
+                key=f"domaine_etudes_{i}",
+            )
 
     # Boutons de validation et d'annulation
-    col1, temp,col2 = st.columns([2, 3, 1])
+    col1, temp, col2 = st.columns([2, 3, 1])
     with col1:
         if st.button("Enregistrer les modifications", type="primary"):
-            st.session_state['cv_json'] = cv_info  # Mettre à jour les informations du CV dans la session
+            st.session_state["cv_json"] = (
+                cv_info  # Mettre à jour les informations du CV dans la session
+            )
             st.success("Les modifications ont été enregistrées avec succès !")
             st.session_state["modifications"] = True
             # st.session_state["suivant"] = True
+
             st.rerun()  # Recharger la page pour appliquer les modifications

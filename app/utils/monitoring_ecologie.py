@@ -22,3 +22,4 @@ class EnvironmentMetrics:
 
 # Créer une instance unique
 # monitoring_environnement = EnvironmentMetrics()
+# class_impact = st.session_state["monitoring_environnement"]
