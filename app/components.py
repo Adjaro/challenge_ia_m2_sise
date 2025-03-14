@@ -589,7 +589,7 @@ def show_offre_emploi():
     with st.spinner("Recherche des offres en cours..."):
         domain_recherche = st.session_state.get('domaine_offre', "")
 
-        offres = scraper.scrap_many('domaine_recherche', limit=2)
+        offres = scraper.scrap_many(domain_recherche, limit=5)
         
         progress_bar = st.progress(0)
         liste_offres_analyser = []
