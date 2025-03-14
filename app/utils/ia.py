@@ -26,9 +26,9 @@ monitoring_environnement = EnvironmentMetrics()
 # 2. Analyser le CV pour extraire les informations structurées
 # 3. Calculer la similarité globale entre le CV et une offre d'emploi
 # 4. Analyser une offre d'emploi pour extraire les informations structurées
-# 5. Calculer les similarités pour chaque section du CV et de l'offre d'emploi
+# 5. Calculer les similarités pour chaque section du CV(Formation, Competences, Experiences, Profil) et de l'offre d'emploi
 # 6. Extraires les informations personnelles d'un CV
-# 7. Générer une lettre de motivation personnalisée
+# 7. Générer une lettre de motivation/CV personnalisée
 #
 ##########
 
