@@ -14,9 +14,9 @@ from utils.ia import EnvironmentMetrics
 st.session_state["domaine_offre"] = False
 
 # Vérifier si la session n'est pas déjà initialisée
-if "monitoring" not in st.session_state:
+if "monitoring_environnement" not in st.session_state:
     monitoring_environnement = EnvironmentMetrics()
-    st.session_state["monitoring"] = monitoring_environnement
+    st.session_state["monitoring_environnement"] = monitoring_environnement
 
 # Charger les variables d'environnement
 load_dotenv(find_dotenv())
