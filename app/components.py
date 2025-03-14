@@ -4,7 +4,7 @@ from PIL import Image  # Pour gérer l'image du logo
 import json
 from docx import Document
 from io import BytesIO
-from  utils.classCVGenerator import CVGenerator
+# from  utils.classCVGenerator import CVGenerator
 from utils.ia import (
     analyze_offre_emploi,
     calculate_section_similarity,
@@ -272,20 +272,21 @@ def show_comparaison_cv():
 
         with col1:
             if st.button("Generer un cv"):
+                pass
                  # instancier le générateur de CV
-                cv_generator = CVGenerator()
-                cv_text = st.session_state["cv_brut"]
-                job_data = st.session_state["offre_emploi_brut"]
-                generate_perfect_cv = cv_generator.generate_perfect_cv(cv_text, job_data)
-                clean_text = cv_generator.clean_cv_text(generate_perfect_cv)
-                export_cv_to_pdf = cv_generator.export_cv_to_pdf(clean_text)
-                with open(export_cv_to_pdf, "rb") as pdf_file:
-                            st.download_button(
-                                label="📥 Télécharger le CV en PDF",
-                                data=pdf_file,
-                                file_name="CV_Optimisé.pdf",
-                                mime="application/pdf"
-                            )
+                # cv_generator = CVGenerator()
+                # cv_text = st.session_state["cv_brut"]
+                # job_data = st.session_state["offre_emploi_brut"]
+                # generate_perfect_cv = cv_generator.generate_perfect_cv(cv_text, job_data)
+                # clean_text = cv_generator.clean_cv_text(generate_perfect_cv)
+                # export_cv_to_pdf = cv_generator.export_cv_to_pdf(clean_text)
+                # with open(export_cv_to_pdf, "rb") as pdf_file:
+                #             st.download_button(
+                #                 label="📥 Télécharger le CV en PDF",
+                #                 data=pdf_file,
+                #                 file_name="CV_Optimisé.pdf",
+                #                 mime="application/pdf"
+                #             )
                          
 
 
