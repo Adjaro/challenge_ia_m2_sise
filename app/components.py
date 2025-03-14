@@ -272,6 +272,7 @@ def show_comparaison_cv():
 
         with col1:
             if st.button("Generer un cv"):
+                pass
                  # instancier le générateur de CV
                 # cv_generator = CVGenerator()
                 # cv_text = st.session_state["cv_brut"]
