@@ -2,7 +2,14 @@ import os
 import streamlit as st
 from PIL import Image  # Pour gérer l'image du logo
 import json
-from utils.ia import analyze_offre_emploi, calculate_section_similarity
+from docx import Document
+from io import BytesIO
+
+from utils.ia import (
+    analyze_offre_emploi,
+    calculate_section_similarity,
+    generate_lettre_motivation,
+)
 from utils.classFactory import ScrapingFactory
 import time
 from utils.monitoring_ecologie import EnvironmentMetrics
@@ -80,8 +87,6 @@ def show_sidebar(cv_info: dict) -> str:
     with st.sidebar:
         st.markdown("---")
 
-
-    
         # Button "Modifier mes informations"
         if st.button("Modifier mes informations"):
             show_modifier_cv()
@@ -89,10 +94,10 @@ def show_sidebar(cv_info: dict) -> str:
         # Button "Voir plus d'offres"
         if st.button("Voir plus d'offres"):
             st.session_state["domaine_page"] = 1
-        
-        if st.session_state.get('domaine_page') == 1:
+
+        if st.session_state.get("domaine_page") == 1:
             entrer_domain()
-        elif st.session_state.get('domaine_page') == 2:
+        elif st.session_state.get("domaine_page") == 2:
             show_offre_emploi()
 
         # Button "Impact environnemental"
@@ -161,6 +166,7 @@ def comparer_cv():
 
                 progress_bar.progress(10)
                 offre_emploi = scraper.scrap_one(url)
+                st.session_state["offre_emploi_brut"] = offre_emploi
                 # st.write(offre_emploi)
 
                 progress_bar.progress(30)
@@ -261,15 +267,39 @@ def show_comparaison_cv():
                 st.metric(
                     label=f"{emoji} {label}", value=f"{value:.1f}%", delta="match"
                 )
-        col1, col2 , col3 = st.columns([2, 2, 2])
+        col1, col2, col3 = st.columns([2, 2, 2])
 
         with col1:
             if st.button("Generer un cv"):
                 show_modifier_cv()
 
         with col3:
-            if st.button("Generer une Motivation"):
-                comparer_cv()
+            if st.button("Generer une lettre de motivation personnalisée"):
+                # Génération d'une lettre de motivation
+                st.success("Génération de la lettre de motivation en cours...")
+                lettre_motiv_personaliser = generate_lettre_motivation(
+                    text_brut=st.session_state["cv_brut"],
+                    job_offer=st.session_state["offre_emploi_brut"],
+                )
+                st.write(lettre_motiv_personaliser)
+
+                doc = Document()
+                doc.add_heading("Lettre de Motivation", 0)
+                doc.add_paragraph(lettre_motiv_personaliser)
+
+                # Sauvegarder en mémoire
+                buffer = BytesIO()
+                doc.save(buffer)
+                buffer.seek(0)
+
+                # Bouton de téléchargement
+                st.download_button(
+                    label="📥 Télécharger la lettre en format Word",
+                    data=buffer,
+                    file_name="lettre_motivation.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+
     with tab2:
         # Detailed comparison by section
         sections = {
@@ -343,13 +373,16 @@ def show_comparaison_cv():
             f"⚠️ Votre profil présente quelques écarts avec cette offre (compatibilité: {total_score*100:.1f}%)"
         )
 
+
 @st.dialog("Domaine de l'offre", width="medium")
 def entrer_domain():
     """
     Affiche une boîte de dialogue pour entrer le domaine de l'offre d'emploi.
     """
     st.markdown("### 📝 Domaine de l'offre d'emploi")
-    st.markdown("Veuillez entrer le domaine de l'offre d'emploi pour obtenir des recommandations personnalisées.")
+    st.markdown(
+        "Veuillez entrer le domaine de l'offre d'emploi pour obtenir des recommandations personnalisées."
+    )
 
     # Champ de saisie pour le domaine de l'offre d'emploi (obligatoire)
     domaine = st.text_input("Domaine de l'offre d'emploi", placeholder="Informatique")
@@ -390,7 +423,9 @@ def afficher_carte_cliquable(offre_emploi):
         # Afficher le profil
         profil = offre_emploi.get("Profil", {})
         st.markdown(f"#### 👤 {profil.get('titre', 'Titre non spécifié')}")
-        st.markdown(f"**Disponibilité :** {profil.get('disponibilite', 'Non spécifié')}")
+        st.markdown(
+            f"**Disponibilité :** {profil.get('disponibilite', 'Non spécifié')}"
+        )
 
         # Afficher les compétences
         st.markdown("#### 🛠️ Compétences requises")
@@ -405,9 +440,10 @@ def afficher_carte_cliquable(offre_emploi):
         # Bouton pour rendre la carte cliquable
         if st.button("Matching", key=f"btn_{offre_emploi.get('Profil', 'default')}"):
             # st.session_state['offre_selectionnee'] = offre_emploi
-            st.session_state['offre_json'] = offre_emploi
+            st.session_state["offre_json"] = offre_emploi
             comparer_cv_offre()
             st.rerun()
+
 
 @st.dialog("offre_emploi", width="large")
 def show_offre_emploi():
@@ -415,23 +451,24 @@ def show_offre_emploi():
     Affiche une boîte de dialogue pour entrer les informations d'une offre d'emploi.
     """
     st.markdown("### 📝 Informations de l'offre d'emploi")
-    st.markdown("Veuillez entrer les informations de l'offre d'emploi pour obtenir des recommandations personnalisées.")
+    st.markdown(
+        "Veuillez entrer les informations de l'offre d'emploi pour obtenir des recommandations personnalisées."
+    )
 
     scraper = ScrapingFactory()
-    domain_recherche = st.session_state.get('domaine_offre', "")
-    departement_recherche = st.session_state.get('departement_offre', "")
+    domain_recherche = st.session_state.get("domaine_offre", "")
+    departement_recherche = st.session_state.get("departement_offre", "")
     # offres = scraper.scrap_many(domain_recherche, departement_recherche, limit=25)
-    offres = scraper.scrap_many('informatique', limit=10)
+    offres = scraper.scrap_many("informatique", limit=10)
     liste_offres_analyser = []
     for offre in offres:
         offre = f"{offre['description']} "
         analyse = analyze_offre_emploi(offre)
-        analyse = json.loads(analyse)        
+        analyse = json.loads(analyse)
         # st.write(analyse)
         afficher_carte_cliquable(analyse)
         liste_offres_analyser.append(analyse)
         time.sleep(5)
-
 
     st.write(offres)
 
