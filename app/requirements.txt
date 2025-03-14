@@ -8,3 +8,8 @@ streamlit
 streamlit_option_menu
 sentence_transformers
 python-docx
+json
+datetime
+locale
+scikit-learn
+numpy
