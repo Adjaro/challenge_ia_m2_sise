@@ -11,6 +11,6 @@ python-docx
 json
 datetime
 locale
-scikit-learn
-numpy
-weasyprint
+# scikit-learn
+# numpy
+# weasyprint
