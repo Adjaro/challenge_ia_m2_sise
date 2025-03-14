@@ -2,7 +2,7 @@ import os
 import streamlit as st
 from PIL import Image  # Pour gérer l'image du logo
 import json
-from utils.ia import analyze_offre_emploi, calculate_section_similarity
+from utils.ia import analyze_offre_emploi, calculate_section_similarity, calculate_similarity
 from utils.classFactory import ScrapingFactory
 import time
 LOGO_PATH = "logo.png"
@@ -101,7 +101,7 @@ def comparer_cv_offre():
         offre_emploi_reformule= str_analyse
     )
     st.session_state['comparaison'] = comparaison
-    return comparaison
+    return omparaisonc
  
  
 def comparer_cv():
@@ -328,63 +328,174 @@ def entrer_domain():
         # Fermer la boîte de dialogue et recharger la page
         st.rerun()
 
-
-def afficher_carte_cliquable(offre_emploi):
+def afficher_carte_cliquable(offre_emploi , url="https://www.example.com"):
     """
-    Affiche une carte cliquable contenant le profil et les compétences d'une offre d'emploi.
-
-    Args:
-        offre_emploi (dict): Dictionnaire contenant les informations de l'offre d'emploi.
+    Affiche une carte cliquable stylisée pour une offre d'emploi.
     """
-    # Créer une carte avec un conteneur stylisé
-    with st.container(border=True):
-        # Afficher le profil
+    # Custom CSS for job cards
+    st.markdown("""
+        <style>
+            .job-card {
+                background-color: white;
+                border-radius: 10px;
+                padding: 20px;
+                margin: 10px 0;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                transition: transform 0.2s ease;
+            }
+            .job-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            }
+            .job-title {
+                color: #1E3D59;
+                font-size: 20px;
+                margin-bottom: 10px;
+            }
+            .job-info {
+                color: #666;
+                font-size: 16px;
+                margin: 5px 0;
+            }
+            .competence-tag {
+                background-color: #e9ecef;
+                border-radius: 15px;
+                padding: 5px 10px;
+                margin: 2px;
+                display: inline-block;
+                font-size: 14px;
+            }
+            .match-button {
+                background-color: #4CAF50;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 5px;
+                border: none;
+                cursor: pointer;
+                margin-top: 15px;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    with st.container():
+
+
+        score = calculate_section_similarity(
+            cv_reformule= json.dumps(st.session_state.get('cv_json', {})),
+            offre_emploi_reformule= json.dumps(offre_emploi)
+        )
+        score_general = sum(score.values()) / len(score)
+        st.markdown('<div class="job-card">', unsafe_allow_html=True)
+
+        # En-tête de la carte
         profil = offre_emploi.get("Profil", {})
-        st.markdown(f"#### 👤 {profil.get('titre', 'Titre non spécifié')}")
-        st.markdown(f"**Disponibilité :** {profil.get('disponibilite', 'Non spécifié')}")
+        st.markdown(f'<h3 class="job-title">👤 {profil.get("titre", "Titre non spécifié")}</h3>', unsafe_allow_html=True)
+        
+        # Informations principales
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            st.markdown(f'<p class="job-info">📍 {profil.get("disponibilite", "Non spécifié")}</p>', unsafe_allow_html=True)
+            
+            # Compétences
+            st.markdown("#### 🛠️ Compétences requises")
+            competences = offre_emploi.get("Competences", [])
+            if competences:
+                st.markdown(f'<span class="competence-tag">{competences}</span>', unsafe_allow_html=True)
+            else:
+                st.info("Aucune compétence spécifiée.")
 
-        # Afficher les compétences
-        st.markdown("#### 🛠️ Compétences requises")
-        competences = offre_emploi.get("Competences", [])
-        # st.markdown("Compétences requises :")
-        if competences:
-            st.markdown(competences)
+            data =score
+            col11 , col22 = st.columns([1, 1])
+            with col11:
+                # Affichage des scores avec st.metric
+                st.metric(label="Formation", value=f"{data['formation']:.3f}")
+                st.metric(label="Compétences", value=f"{data['competences']:.3f}")
+            with col22:
+                st.metric(label="Expériences", value=f"{data['experiences']:.3f}")
+                st.metric(label="Profil", value=f"{data['profil']:.3f}")
+            # st.write(score)
+        with col2:
+            # url = "https://www.example.com"
 
-        else:
-            st.markdown("Aucune compétence spécifiée.")
+            # Afficher un bouton qui redirige vers le site externe
+            st.markdown(f"""
+                <a href="{url}" target="_blank">
+                    <button style="background-color: #45a049; color: white; border-radius: 10px; padding: 10px 20px; border: none;">
+                        Visiter le site externe
+                    </button>
+                </a>
+            """, unsafe_allow_html=True)
 
-        # Bouton pour rendre la carte cliquable
-        if st.button("Matching", key=f"btn_{offre_emploi.get('Profil', 'default')}"):
-            # st.session_state['offre_selectionnee'] = offre_emploi
-            st.session_state['offre_json'] = offre_emploi
-            comparer_cv_offre()
-            st.rerun()
+            st.metric(label="Score général", value=f"{score_general:.3f}")
+
+            # if st.button("✨ Matching", key=f"match_{profil.get('titre', '')}"):
+            #     st.session_state['offre_json'] = offre_emploi
+            #     comparer_cv_offre()
+            #     st.rerun()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
 @st.dialog("offre_emploi", width="large")
 def show_offre_emploi():
     """
-    Affiche une boîte de dialogue pour entrer les informations d'une offre d'emploi.
+    Affiche les offres d'emploi avec un design amélioré.
     """
-    st.markdown("### 📝 Informations de l'offre d'emploi")
-    st.markdown("Veuillez entrer les informations de l'offre d'emploi pour obtenir des recommandations personnalisées.")
+    st.markdown("""
+        <style>
+            .search-header {
+                background-color: #f8f9fa;
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+            }
+            .search-title {
+                color: #1E3D59;
+                font-size: 24px;
+                margin-bottom: 10px;
+            }
+            .search-info {
+                color: #666;
+                font-size: 16px;
+            }
+        </style>
+    """, unsafe_allow_html=True)
 
-    scraper = ScrapingFactory()
+    # En-tête de recherche
+    st.markdown('<div class="search-header">', unsafe_allow_html=True)
+    st.markdown('<h2 class="search-title">🔍 Résultats de recherche</h2>', unsafe_allow_html=True)
+    
     domain_recherche = st.session_state.get('domaine_offre', "")
     departement_recherche = st.session_state.get('departement_offre', "")
-    # offres = scraper.scrap_many(domain_recherche, departement_recherche, limit=25)
-    offres = scraper.scrap_many('informatique', limit=10)
-    liste_offres_analyser = []
-    for offre in offres:
-        offre = f"{offre['description']} "
-        analyse = analyze_offre_emploi(offre)
-        analyse = json.loads(analyse)        
-        # st.write(analyse)
-        afficher_carte_cliquable(analyse)
-        liste_offres_analyser.append(analyse)
-        time.sleep(5)
+    
+    st.markdown(f'<p class="search-info">Domaine : {domain_recherche}</p>', unsafe_allow_html=True)
+    if departement_recherche:
+        st.markdown(f'<p class="search-info">Département : {departement_recherche}</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-
-    st.write(offres)
+    # Affichage des offres avec barre de progression
+    scraper = ScrapingFactory()
+    with st.spinner("Recherche des offres en cours..."):
+        offres = scraper.scrap_many('informatique', limit=2)
+        
+        progress_bar = st.progress(0)
+        liste_offres_analyser = []
+        
+        for i, offre in enumerate(offres):
+            progress = (i + 1) / len(offres)
+            progress_bar.progress(progress)
+            
+            offre_text = f"{offre['description']} "
+            url = offre['origineOffre']['urlOrigine']
+            # st.write(url)
+            analyse = analyze_offre_emploi(offre_text)
+            analyse = json.loads(analyse)
+            
+            afficher_carte_cliquable(analyse, url)
+            liste_offres_analyser.append(analyse)
+            # time.sleep(2)   
+            
+        progress_bar.empty()
 
 
 @st.dialog("Modification du CV", width="large")
