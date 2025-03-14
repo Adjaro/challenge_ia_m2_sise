@@ -106,8 +106,6 @@ def get_energy_usage(response: litellm.ModelResponse):
 
         return energy_usage, gwp
     # return None, None
-    return 0 , 0
-
     return 0.0012690997062349395, 0.014055733644698878 # Estimation pour le modèle qu'on utilise
 
 ############################### FIN Monitoring ###############################
