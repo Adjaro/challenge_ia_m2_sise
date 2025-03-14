@@ -16,7 +16,7 @@ def set_custom_style():
         <style>
             /* Style pour la sidebar */
             section[data-testid="stSidebar"] {
-                background-color: #04072b !important; /* Couleur de fond de la sidebar */
+                background-color: #3f4f43 !important; /* Couleur de fond de la sidebar */
                 border-radius: 20px !important; /* Arrondir les coins de la sidebar */
                 padding: 20px !important; /* Espacement interne */
                 color: white !important; /* Couleur du texte dans la sidebar */
@@ -72,13 +72,20 @@ def show_sidebar(cv_info: dict) -> str:
     with st.sidebar:
         st.markdown("---")
 
+
+    
         # Button "Modifier mes informations"
         if st.button("Modifier mes informations"):
             show_modifier_cv()
 
         # Button "Voir plus d'offres"
         if st.button("Voir plus d'offres"):
-            st.success("Fonctionnalité pour voir plus d'offres")
+            st.session_state["domaine_page"] = 1
+        
+        if st.session_state.get('domaine_page') == 1:
+            entrer_domain()
+        elif st.session_state.get('domaine_page') == 2:
+            show_offre_emploi()
 
         st.markdown("---")
 
@@ -132,9 +139,11 @@ def comparer_cv():
                 
                 progress_bar.progress(10)
                 offre_emploi = scraper.scrap_one(url)
+                # st.write(offre_emploi)
 
                 progress_bar.progress(30)
                 analyse = analyze_offre_emploi(offre_emploi)
+                # st.write(analyse)
                 analyse = json.loads(analyse)
                 st.session_state["offre_json"] = analyse
 
@@ -221,7 +230,15 @@ def show_comparaison_cv():
                     value=f"{value:.1f}%",
                     delta="match"
                 )
+        col1, col2 , col3 = st.columns([2, 2, 2])
 
+        with col1:
+            if st.button("Generer un cv"):
+                show_modifier_cv()
+
+        with col3:
+            if st.button("Generer une Motivation"):
+                comparer_cv()
     with tab2:
         # Detailed comparison by section
         sections = {
@@ -276,6 +293,98 @@ def show_comparaison_cv():
     else:
         st.warning(f"⚠️ Votre profil présente quelques écarts avec cette offre (compatibilité: {total_score*100:.1f}%)")
 
+
+@st.dialog("Domaine de l'offre", width="medium")
+def entrer_domain():
+    """
+    Affiche une boîte de dialogue pour entrer le domaine de l'offre d'emploi.
+    """
+    st.markdown("### 📝 Domaine de l'offre d'emploi")
+    st.markdown("Veuillez entrer le domaine de l'offre d'emploi pour obtenir des recommandations personnalisées.")
+
+    # Champ de saisie pour le domaine de l'offre d'emploi (obligatoire)
+    domaine = st.text_input("Domaine de l'offre d'emploi", placeholder="Informatique")
+
+    # Champ de saisie pour le département de l'offre d'emploi (optionnel mais doit être numérique)
+    departement = st.text_input("Département de l'offre d'emploi", placeholder="69")
+
+    # Bouton pour valider les informations
+    if st.button("Valider"):
+        # Validation du domaine (obligatoire)
+        if not domaine:
+            st.error("Veuillez entrer un domaine pour l'offre d'emploi.")
+            return
+
+        # Validation du département (optionnel mais doit être numérique)
+        if departement and not departement.isdigit():
+            st.error("Le département doit être un nombre valide.")
+            return
+
+        # Enregistrer les informations dans la session
+        st.session_state["domaine_offre"] = domaine
+        st.session_state["departement_offre"] = departement
+        st.session_state["domaine_page"] = 2  # Passer à la page suivante
+
+        # Fermer la boîte de dialogue et recharger la page
+        st.rerun()
+
+
+def afficher_carte_cliquable(offre_emploi):
+    """
+    Affiche une carte cliquable contenant le profil et les compétences d'une offre d'emploi.
+
+    Args:
+        offre_emploi (dict): Dictionnaire contenant les informations de l'offre d'emploi.
+    """
+    # Créer une carte avec un conteneur stylisé
+    with st.container(border=True):
+        # Afficher le profil
+        profil = offre_emploi.get("Profil", {})
+        st.markdown(f"#### 👤 {profil.get('titre', 'Titre non spécifié')}")
+        st.markdown(f"**Disponibilité :** {profil.get('disponibilite', 'Non spécifié')}")
+
+        # Afficher les compétences
+        st.markdown("#### 🛠️ Compétences requises")
+        competences = offre_emploi.get("Competences", [])
+        # st.markdown("Compétences requises :")
+        if competences:
+            st.markdown(competences)
+
+        else:
+            st.markdown("Aucune compétence spécifiée.")
+
+        # Bouton pour rendre la carte cliquable
+        if st.button("Matching", key=f"btn_{offre_emploi.get('Profil', 'default')}"):
+            # st.session_state['offre_selectionnee'] = offre_emploi
+            st.session_state['offre_json'] = offre_emploi
+            comparer_cv_offre()
+            st.rerun()
+
+@st.dialog("offre_emploi", width="large")
+def show_offre_emploi():
+    """
+    Affiche une boîte de dialogue pour entrer les informations d'une offre d'emploi.
+    """
+    st.markdown("### 📝 Informations de l'offre d'emploi")
+    st.markdown("Veuillez entrer les informations de l'offre d'emploi pour obtenir des recommandations personnalisées.")
+
+    scraper = ScrapingFactory()
+    domain_recherche = st.session_state.get('domaine_offre', "")
+    departement_recherche = st.session_state.get('departement_offre', "")
+    # offres = scraper.scrap_many(domain_recherche, departement_recherche, limit=25)
+    offres = scraper.scrap_many('informatique', limit=10)
+    liste_offres_analyser = []
+    for offre in offres:
+        offre = f"{offre['description']} "
+        analyse = analyze_offre_emploi(offre)
+        analyse = json.loads(analyse)        
+        # st.write(analyse)
+        afficher_carte_cliquable(analyse)
+        liste_offres_analyser.append(analyse)
+        time.sleep(5)
+
+
+    st.write(offres)
 
 
 @st.dialog("Modification du CV", width="large")

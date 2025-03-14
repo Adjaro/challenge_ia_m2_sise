@@ -7,10 +7,16 @@ from dotenv import find_dotenv, load_dotenv
 
 # Importation des pages de l'application
 from homepage import homepage
-from componentsAlexis import offre_emploi_page
 from  components import show_sidebar, comparer_cv
+from utils.ia import EnvironmentMetrics
 
+# Initialiser le monitoring de l'environnement au démarrage
+st.session_state["domaine_offre"] = False
 
+# Vérifier si la session n'est pas déjà initialisée
+if "monitoring" not in st.session_state:
+    monitoring_environnement = EnvironmentMetrics()
+    st.session_state["monitoring"] = monitoring_environnement
 
 # Charger les variables d'environnement
 load_dotenv(find_dotenv())

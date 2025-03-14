@@ -8,10 +8,13 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime
 import locale
-from monitoring_ecologie import EnvironmentMetrics
+from .monitoring_ecologie import EnvironmentMetrics
+# import monitoring_ecologie.EnvironmentMetrics as EnvironmentMetrics
 import json
-
+import streamlit as st
 load_dotenv()
+import functools
+import time
 
 # Créer une instance unique de monitoring -> A discuter avec Alexis comment implémenter dans son streamlit (cache, session ?)
 monitoring_environnement = EnvironmentMetrics()
@@ -87,23 +90,29 @@ def get_energy_usage(response: litellm.ModelResponse):
                 response.impacts.energy.value, "min", response.impacts.energy.value
             )
         except AttributeError:
-            energy_usage = None
+            print("energy_usage error")
+            raise AttributeError
+            energy_usage = 0
+            # energy_usage = None
 
         try:
             gwp = getattr(
                 response.impacts.gwp.value, "min", response.impacts.gwp.value
             )
         except AttributeError:
-            gwp = None
+            raise AttributeError
+            gwp = 0
+            # gwp = None
 
         return energy_usage, gwp
+    # return None, None
+    return 0 , 0
 
-    return None, None
 
 ############################### FIN Monitoring ###############################
 
 
-def analyze_cv(text_brut: str, temperature: float = 0.01, max_tokens: int = 1500) -> str:
+def analyze_cv(text_brut: str, temperature: float = 0.01, max_tokens: int = 1500 ) -> str:
     """
     Analyse un CV en format texte et retourne les informations structurées en JSON.
 
@@ -165,7 +174,8 @@ def analyze_cv(text_brut: str, temperature: float = 0.01, max_tokens: int = 1500
 
         # Impact écologique
         energy_usage, gwp = get_energy_usage(response=response)
-        
+        # monitoring_environnement = st.session_state.get("monitoring")
+        global monitoring_environnement
         monitoring_environnement.update_metrics(new_gwp=gwp, new_energy=energy_usage)
 
         # Ajout à une variable globale pour utilisation ultérieure ?
@@ -524,7 +534,6 @@ def generate_lettre_motivation(text_brut: str, job_offer:str) ->str:
 
 
  
-=======
 # # Example usage
 # if __name__ == "__main__":
 #     file_path = "CV_V4_EN.pdf"

@@ -112,6 +112,7 @@ def homepage():
         if uploaded_cv is not None:
             st.session_state['uploaded_cv'] = uploaded_cv
             cv_filename = uploaded_cv.name
+
             st.session_state['cv_filename'] = cv_filename
 
             cv_text = read_pdf(uploaded_cv)
