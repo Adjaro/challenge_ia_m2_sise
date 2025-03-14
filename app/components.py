@@ -7,7 +7,7 @@ from utils.classFactory import ScrapingFactory
 import time
 from utils.monitoring_ecologie import EnvironmentMetrics
 
-LOGO_PATH = "logo.png"
+LOGO_PATH = "app/logo.png"
 
 
 def set_custom_style():

@@ -1,0 +1,9 @@
+bs4
+requests
+pypdf2
+litellm
+dotenv
+pandas
+streamlit
+streamlit_option_menu
+sentence_transformers

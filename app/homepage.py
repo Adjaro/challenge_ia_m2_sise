@@ -92,7 +92,7 @@ def homepage():
         # Logo et titre centrés
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.image("logo.png", width=250)  # Remplacez par le chemin de votre logo
+            st.image("app/logo.png", width=250)  # Remplacez par le chemin de votre logo
             st.title("Bienvenue sur JobMatch")
             st.markdown(
                 "<div style='text-align: center;'>"
