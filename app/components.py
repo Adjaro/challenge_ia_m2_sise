@@ -525,7 +525,9 @@ def show_offre_emploi():
     # Affichage des offres avec barre de progression
     scraper = ScrapingFactory()
     with st.spinner("Recherche des offres en cours..."):
-        offres = scraper.scrap_many('informatique', limit=2)
+        domain_recherche = st.session_state.get('domaine_offre', "")
+
+        offres = scraper.scrap_many('domaine_recherche', limit=2)
         
         progress_bar = st.progress(0)
         liste_offres_analyser = []
