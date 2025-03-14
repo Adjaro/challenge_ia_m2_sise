@@ -2,7 +2,15 @@ import os
 import streamlit as st
 from PIL import Image  # Pour gérer l'image du logo
 import json
-from utils.ia import analyze_offre_emploi, calculate_section_similarity, calculate_similarity
+from docx import Document
+from io import BytesIO
+
+from utils.ia import (
+    analyze_offre_emploi,
+    calculate_section_similarity,
+    generate_lettre_motivation,
+    calculate_similarity,
+)
 from utils.classFactory import ScrapingFactory
 import time
 from utils.monitoring_ecologie import EnvironmentMetrics
@@ -80,8 +88,6 @@ def show_sidebar(cv_info: dict) -> str:
     with st.sidebar:
         st.markdown("---")
 
-
-    
         # Button "Modifier mes informations"
         if st.button("Modifier mes informations"):
             show_modifier_cv()
@@ -89,10 +95,10 @@ def show_sidebar(cv_info: dict) -> str:
         # Button "Voir plus d'offres"
         if st.button("Voir plus d'offres"):
             st.session_state["domaine_page"] = 1
-        
-        if st.session_state.get('domaine_page') == 1:
+
+        if st.session_state.get("domaine_page") == 1:
             entrer_domain()
-        elif st.session_state.get('domaine_page') == 2:
+        elif st.session_state.get("domaine_page") == 2:
             show_offre_emploi()
 
         # Button "Impact environnemental"
@@ -161,6 +167,7 @@ def comparer_cv():
 
                 progress_bar.progress(10)
                 offre_emploi = scraper.scrap_one(url)
+                st.session_state["offre_emploi_brut"] = offre_emploi
                 # st.write(offre_emploi)
 
                 progress_bar.progress(30)
@@ -261,15 +268,39 @@ def show_comparaison_cv():
                 st.metric(
                     label=f"{emoji} {label}", value=f"{value:.1f}%", delta="match"
                 )
-        col1, col2 , col3 = st.columns([2, 2, 2])
+        col1, col2, col3 = st.columns([2, 2, 2])
 
         with col1:
             if st.button("Generer un cv"):
                 show_modifier_cv()
 
         with col3:
-            if st.button("Generer une Motivation"):
-                comparer_cv()
+            if st.button("Generer une lettre de motivation personnalisée"):
+                # Génération d'une lettre de motivation
+                st.success("Génération de la lettre de motivation en cours...")
+                lettre_motiv_personaliser = generate_lettre_motivation(
+                    text_brut=st.session_state["cv_brut"],
+                    job_offer=st.session_state["offre_emploi_brut"],
+                )
+                st.write(lettre_motiv_personaliser)
+
+                doc = Document()
+                doc.add_heading("Lettre de Motivation", 0)
+                doc.add_paragraph(lettre_motiv_personaliser)
+
+                # Sauvegarder en mémoire
+                buffer = BytesIO()
+                doc.save(buffer)
+                buffer.seek(0)
+
+                # Bouton de téléchargement
+                st.download_button(
+                    label="📥 Télécharger la lettre en format Word",
+                    data=buffer,
+                    file_name="lettre_motivation.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+
     with tab2:
         # Detailed comparison by section
         sections = {
@@ -343,13 +374,16 @@ def show_comparaison_cv():
             f"⚠️ Votre profil présente quelques écarts avec cette offre (compatibilité: {total_score*100:.1f}%)"
         )
 
+
 @st.dialog("Domaine de l'offre", width="medium")
 def entrer_domain():
     """
     Affiche une boîte de dialogue pour entrer le domaine de l'offre d'emploi.
     """
     st.markdown("### 📝 Domaine de l'offre d'emploi")
-    st.markdown("Veuillez entrer le domaine de l'offre d'emploi pour obtenir des recommandations personnalisées.")
+    st.markdown(
+        "Veuillez entrer le domaine de l'offre d'emploi pour obtenir des recommandations personnalisées."
+    )
 
     # Champ de saisie pour le domaine de l'offre d'emploi (obligatoire)
     domaine = st.text_input("Domaine de l'offre d'emploi", placeholder="Informatique")
@@ -377,12 +411,14 @@ def entrer_domain():
         # Fermer la boîte de dialogue et recharger la page
         st.rerun()
 
-def afficher_carte_cliquable(offre_emploi , url="https://www.example.com"):
+
+def afficher_carte_cliquable(offre_emploi, url="https://www.example.com"):
     """
     Affiche une carte cliquable stylisée pour une offre d'emploi.
     """
     # Custom CSS for job cards
-    st.markdown("""
+    st.markdown(
+        """
         <style>
             .job-card {
                 background-color: white;
@@ -424,38 +460,48 @@ def afficher_carte_cliquable(offre_emploi , url="https://www.example.com"):
                 margin-top: 15px;
             }
         </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     with st.container():
 
-
         score = calculate_section_similarity(
-            cv_reformule= json.dumps(st.session_state.get('cv_json', {})),
-            offre_emploi_reformule= json.dumps(offre_emploi)
+            cv_reformule=json.dumps(st.session_state.get("cv_json", {})),
+            offre_emploi_reformule=json.dumps(offre_emploi),
         )
         score_general = sum(score.values()) / len(score)
         st.markdown('<div class="job-card">', unsafe_allow_html=True)
 
         # En-tête de la carte
         profil = offre_emploi.get("Profil", {})
-        st.markdown(f'<h3 class="job-title">👤 {profil.get("titre", "Titre non spécifié")}</h3>', unsafe_allow_html=True)
-        
+        st.markdown(
+            f'<h3 class="job-title">👤 {profil.get("titre", "Titre non spécifié")}</h3>',
+            unsafe_allow_html=True,
+        )
+
         # Informations principales
         col1, col2 = st.columns([3, 1])
-        
+
         with col1:
-            st.markdown(f'<p class="job-info">📍 {profil.get("disponibilite", "Non spécifié")}</p>', unsafe_allow_html=True)
-            
+            st.markdown(
+                f'<p class="job-info">📍 {profil.get("disponibilite", "Non spécifié")}</p>',
+                unsafe_allow_html=True,
+            )
+
             # Compétences
             st.markdown("#### 🛠️ Compétences requises")
             competences = offre_emploi.get("Competences", [])
             if competences:
-                st.markdown(f'<span class="competence-tag">{competences}</span>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<span class="competence-tag">{competences}</span>',
+                    unsafe_allow_html=True,
+                )
             else:
                 st.info("Aucune compétence spécifiée.")
 
-            data =score
-            col11 , col22 = st.columns([1, 1])
+            data = score
+            col11, col22 = st.columns([1, 1])
             with col11:
                 # Affichage des scores avec st.metric
                 st.metric(label="Formation", value=f"{data['formation']:.3f}")
@@ -468,13 +514,16 @@ def afficher_carte_cliquable(offre_emploi , url="https://www.example.com"):
             # url = "https://www.example.com"
 
             # Afficher un bouton qui redirige vers le site externe
-            st.markdown(f"""
+            st.markdown(
+                f"""
                 <a href="{url}" target="_blank">
                     <button style="background-color: #45a049; color: white; border-radius: 10px; padding: 10px 20px; border: none;">
                         Visiter le site externe
                     </button>
                 </a>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
             st.metric(label="Score général", value=f"{score_general:.3f}")
 
@@ -482,15 +531,17 @@ def afficher_carte_cliquable(offre_emploi , url="https://www.example.com"):
             #     st.session_state['offre_json'] = offre_emploi
             #     comparer_cv_offre()
             #     st.rerun()
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
 @st.dialog("offre_emploi", width="large")
 def show_offre_emploi():
     """
     Affiche les offres d'emploi avec un design amélioré.
     """
-    st.markdown("""
+    st.markdown(
+        """
         <style>
             .search-header {
                 background-color: #f8f9fa;
@@ -508,19 +559,30 @@ def show_offre_emploi():
                 font-size: 16px;
             }
         </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # En-tête de recherche
     st.markdown('<div class="search-header">', unsafe_allow_html=True)
-    st.markdown('<h2 class="search-title">🔍 Résultats de recherche</h2>', unsafe_allow_html=True)
-    
-    domain_recherche = st.session_state.get('domaine_offre', "")
-    departement_recherche = st.session_state.get('departement_offre', "")
-    
-    st.markdown(f'<p class="search-info">Domaine : {domain_recherche}</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<h2 class="search-title">🔍 Résultats de recherche</h2>',
+        unsafe_allow_html=True,
+    )
+
+    domain_recherche = st.session_state.get("domaine_offre", "")
+    departement_recherche = st.session_state.get("departement_offre", "")
+
+    st.markdown(
+        f'<p class="search-info">Domaine : {domain_recherche}</p>',
+        unsafe_allow_html=True,
+    )
     if departement_recherche:
-        st.markdown(f'<p class="search-info">Département : {departement_recherche}</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<p class="search-info">Département : {departement_recherche}</p>',
+            unsafe_allow_html=True,
+        )
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # Affichage des offres avec barre de progression
     scraper = ScrapingFactory()
@@ -531,21 +593,21 @@ def show_offre_emploi():
         
         progress_bar = st.progress(0)
         liste_offres_analyser = []
-        
+
         for i, offre in enumerate(offres):
             progress = (i + 1) / len(offres)
             progress_bar.progress(progress)
-            
+
             offre_text = f"{offre['description']} "
-            url = offre['origineOffre']['urlOrigine']
+            url = offre["origineOffre"]["urlOrigine"]
             # st.write(url)
             analyse = analyze_offre_emploi(offre_text)
             analyse = json.loads(analyse)
-            
+
             afficher_carte_cliquable(analyse, url)
             liste_offres_analyser.append(analyse)
-            # time.sleep(2)   
-            
+            # time.sleep(2)
+
         progress_bar.empty()
 
 

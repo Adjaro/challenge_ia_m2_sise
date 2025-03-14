@@ -6,11 +6,14 @@ import requests
 from utils.ia import read_pdf, analyze_cv, calculate_similarity
 from utils.classFactory import ScrapingFactory
 import json
-from components import  show_modifier_cv
+from components import show_modifier_cv
+
+
 def homepage():
     # [Garder le code CSS existant...]
     st.session_state["enregistrer_modifications"] = False
-    st.markdown("""
+    st.markdown(
+        """
         <style>
             .main {
                 padding-top: 2rem;
@@ -85,7 +88,9 @@ def homepage():
                 cursor: pointer;
             }
         </style>
-        """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True,
+    )
 
     with st.container():
         # [Garder le code du container existant jusqu'au chargement du CV...]
@@ -98,35 +103,36 @@ def homepage():
                 "<div style='text-align: center;'>"
                 "Cette application vous permet d'améliorer votre candidature par rapport à des offres d'emplois qui vous intéressent."
                 "</div>",
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
-        
+
         # Zone de chargement centrée
-        st.markdown('<div> ', unsafe_allow_html=True)
+        st.markdown("<div> ", unsafe_allow_html=True)
         uploaded_cv = st.file_uploader(
             label="Pour commencer, chargez votre CV en format .pdf",
-            type=['pdf'],
+            type=["pdf"],
             accept_multiple_files=False,
-            label_visibility="visible"
+            label_visibility="visible",
         )
         if uploaded_cv is not None:
-            st.session_state['uploaded_cv'] = uploaded_cv
+            st.session_state["uploaded_cv"] = uploaded_cv
             cv_filename = uploaded_cv.name
 
-            st.session_state['cv_filename'] = cv_filename
+            st.session_state["cv_filename"] = cv_filename
 
             cv_text = read_pdf(uploaded_cv)
+            st.session_state["cv_brut"] = cv_text
             cv_json = analyze_cv(cv_text)
             cv_json = json.loads(cv_json)  # Convertir la chaîne JSON en dictionnaire
-            #convertir le dictionnaire en json
+            # convertir le dictionnaire en json
             cv_json = json.dumps(cv_json)
-            st.session_state['cv_json'] = cv_json
+            st.session_state["cv_json"] = cv_json
             # st.write(cv_json)
 
             if cv_json:
-                st.session_state['charger_csv'] = True
+                st.session_state["charger_csv"] = True
                 show_modifier_cv()
-            
+
                 # if st.session_state.get('enregistrer_modifications') == True:
                 #     st.session_state['page'] = 'next_page'
                 #     st.rerun()
@@ -134,4 +140,3 @@ def homepage():
                 #     st.session_state['page'] = 'homepage'
                 #     st.rerun()
                 # st.rerun()
- 

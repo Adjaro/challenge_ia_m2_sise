@@ -21,6 +21,7 @@ if "monitoring_environnement" not in st.session_state:
 # Charger les variables d'environnement
 load_dotenv(find_dotenv())
 API_KEY = os.getenv("MISTRAL_API_KEY")
+API_KEY = "7J4S9NaH3Fv7IU7lfTsqgzTfcpfS2pYw"
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 if not API_KEY:
