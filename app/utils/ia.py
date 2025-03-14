@@ -469,12 +469,6 @@ def generate_lettre_motivation(text_brut: str, job_offer:str) ->str:
     adresse = resultat_extraction_info_perso_json.get("adresse")
 
 
-    # Set French locale
-    try:
-        locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')  # Linux/Mac
-    except:
-        locale.setlocale(locale.LC_TIME, 'fra_fra')  # Windows
-
     # Get date in French format
     date = datetime.now().strftime("%d %B %Y")
 
